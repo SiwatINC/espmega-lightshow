@@ -1,20 +1,44 @@
 import tkinter as tk
 import json
 from tkinter import filedialog
+from espmega.espmega_r3 import ESPMega_standalone, ESPMega_slave, ESPMega
+from dataclasses import dataclass
 
 @dataclass
-def PhysicalLightEntity:
+class PhysicalLightEntity:
     controller: ESPMega
     pwm_channel: int
 
+light_server ="192.168.0.26"
+light_server_port = 1883
+light_map = [[{"base_topic": "espmega/1","pwm_id":0},{"base_topic": "espmega/1","pwm_id":1},{"base_topic": "espmega/1","pwm_id":2}],
+            [{"base_topic": "espmega/2","pwm_id":0},{"base_topic": "espmega/2","pwm_id":1},{"base_topic": "espmega/2","pwm_id":2}]]
+
 class LightGrid:
-    def __init__(self, rows, columns):
+    def __init__(self, rows: int, columns: int):
         self.rows = rows
         self.columns = columns
-        self.lights = []
-        self.frames = []
-        self.current_frame = 0
-
+        self.lights: list = [None] * rows * columns
+    def assign_physical_light(self, row: int, column: int, physical_light: PhysicalLightEntity):
+        self.lights[row * self.columns + column] = physical_light
+    def get_physical_light(self, row, column):
+        return self.lights[row * self.columns + column]
+    def set_light_state(self, row: int, column: int, state: bool):
+        physical_light = self.get_physical_light(row, column)
+        if physical_light:
+            physical_light.controller.digital_write(physical_light.pwm_channel, state)
+    def create_physical_light(self, row: int, column: int, controller: ESPMega, pwm_channel: int):
+        self.assign_physical_light(row, column, PhysicalLightEntity(controller, pwm_channel))
+    def get_light_state(self, row: int, column: int):
+        physical_light = self.get_physical_light(row, column)
+        if physical_light:
+            return physical_light.controller.get_pwm_state(physical_light.pwm_channel)
+        else:
+            return None
+    def read_light_map(self, light_map: list):
+        for row_index, row in enumerate(light_map):
+            for column_index, light in enumerate(row):
+                self.create_physical_light(row_index, column_index, ESPMega_standalone(light["base_topic"], light_server, light_server_port), light["pwm_id"])
 def change_color(event):
     row = event.widget.grid_info()["row"]
     column = event.widget.grid_info()["column"]
