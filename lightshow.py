@@ -35,14 +35,18 @@ def save_animation():
         print(f"Animation saved to {filename}")
 
 def play_frames():
+    speed = speed_scale.get()  # Get the value of the speed scale
+    delay = int(1000 / speed)  # Calculate the delay between frames based on speed
     for frame_index, frame in enumerate(frames):
         for i in range(rows):
             for j in range(columns):
+                speed = speed_scale.get()  # Get the value of the speed scale
+                delay = int(1000 / speed)  # Calculate the delay between frames based on speed
                 element = lightgrid_frame.grid_slaves(row=i, column=j)[0]
                 element.config(bg=frame[i][j])
         root.update()
         slider.set(frame_index)  # Update the slider position
-        root.after(500)  # Delay between frames (in milliseconds)
+        root.after(delay)  # Delay between frames (in milliseconds)
 
     repeat = repeat_var.get()  # Get the value of the repeat toggle
     if(repeat):
@@ -81,13 +85,18 @@ record_button = tk.Button(management_frame, text="Record Frame", command=record_
 record_button.pack()
 
 # Create a slider to scrub through recorded frames
-slider = tk.Scale(management_frame, from_=0, to=len(frames)-1, orient="horizontal", command=scrub_frames)
+slider = tk.Scale(management_frame, label="Frame Scrubber", from_=0, to=len(frames)-1, orient="horizontal", command=scrub_frames)
 slider.pack()
 
 # Create a repeat toggle
 repeat_var = tk.BooleanVar()
 repeat_toggle = tk.Checkbutton(management_frame, text="Repeat", variable=repeat_var)
 repeat_toggle.pack()
+
+# Create a scale to adjust playback speed
+speed_scale = tk.Scale(management_frame, from_=1, to=10, orient="horizontal", label="Speed", resolution=0.1)
+speed_scale.set(5)  # Set the default speed to 5
+speed_scale.pack()
 
 lightgrid_frame = tk.Frame(root)
 lightgrid_frame.pack()
