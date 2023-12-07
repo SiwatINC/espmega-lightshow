@@ -2,6 +2,19 @@ import tkinter as tk
 import json
 from tkinter import filedialog
 
+@dataclass
+def PhysicalLightEntity:
+    controller: ESPMega
+    pwm_channel: int
+
+class LightGrid:
+    def __init__(self, rows, columns):
+        self.rows = rows
+        self.columns = columns
+        self.lights = []
+        self.frames = []
+        self.current_frame = 0
+
 def change_color(event):
     row = event.widget.grid_info()["row"]
     column = event.widget.grid_info()["column"]
@@ -35,17 +48,12 @@ def save_animation():
         print(f"Animation saved to {filename}")
 
 def play_frames():
-    speed = speed_scale.get()  # Get the value of the speed scale
-    delay = int(1000 / speed)  # Calculate the delay between frames based on speed
     for frame_index, frame in enumerate(frames):
-        for i in range(rows):
-            for j in range(columns):
-                speed = speed_scale.get()  # Get the value of the speed scale
-                delay = int(1000 / speed)  # Calculate the delay between frames based on speed
-                element = lightgrid_frame.grid_slaves(row=i, column=j)[0]
-                element.config(bg=frame[i][j])
+        render_frame(frame)
         root.update()
         slider.set(frame_index)  # Update the slider position
+        speed = speed_scale.get()  # Get the value of the speed scale
+        delay = int(1000 / speed)  # Calculate the delay between frames based on speed
         root.after(delay)  # Delay between frames (in milliseconds)
 
     repeat = repeat_var.get()  # Get the value of the repeat toggle
@@ -55,11 +63,14 @@ def play_frames():
 def scrub_frames(value):
     frame_index = int(value)
     frame = frames[frame_index]
+    render_frame(frame)
+    root.update()
+
+def render_frame(frame):
     for i in range(rows):
         for j in range(columns):
             element = lightgrid_frame.grid_slaves(row=i, column=j)[0]
             element.config(bg=frame[i][j])
-    root.update()
 
 frames = []
 
