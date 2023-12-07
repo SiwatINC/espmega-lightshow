@@ -44,6 +44,10 @@ def play_frames():
         slider.set(frame_index)  # Update the slider position
         root.after(500)  # Delay between frames (in milliseconds)
 
+    repeat = repeat_var.get()  # Get the value of the repeat toggle
+    if(repeat):
+        play_frames()
+
 def scrub_frames(value):
     frame_index = int(value)
     frame = frames[frame_index]
@@ -76,13 +80,14 @@ play_button.pack()
 record_button = tk.Button(management_frame, text="Record Frame", command=record_frame)
 record_button.pack()
 
-# Create a button to save the animation
-save_button = tk.Button(management_frame, text="Save Animation", command=save_animation)
-save_button.pack()
-
 # Create a slider to scrub through recorded frames
 slider = tk.Scale(management_frame, from_=0, to=len(frames)-1, orient="horizontal", command=scrub_frames)
 slider.pack()
+
+# Create a repeat toggle
+repeat_var = tk.BooleanVar()
+repeat_toggle = tk.Checkbutton(management_frame, text="Repeat", variable=repeat_var)
+repeat_toggle.pack()
 
 lightgrid_frame = tk.Frame(root)
 lightgrid_frame.pack()
@@ -102,6 +107,10 @@ def load_animation():
         slider.config(to=len(frames)-1)  # Update the slider range
         slider.set(0)  # Set the slider value to the first frame
         print(f"Animation loaded from {filename}")
+
+# Create a button to save the animation
+save_button = tk.Button(management_frame, text="Save Animation", command=save_animation)
+save_button.pack()
 
 # Add a button to load the animation
 load_button = tk.Button(management_frame, text="Load Animation", command=load_animation)
