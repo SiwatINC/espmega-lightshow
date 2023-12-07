@@ -72,6 +72,14 @@ root = tk.Tk()
 title_label = tk.Label(root, text="ESPMega Light Show", font=("Arial", 24))
 title_label.pack()
 
+# Create another frame to the bottom
+buttom_frame = tk.Frame(root)
+buttom_frame.pack(side="bottom", padx=10)  # Add padding to the right frame
+
+# Create a text label for the author
+author_label = tk.Label(buttom_frame, text="SIWAT SYSTEM 2023", font=("Arial", 12), fg="gray") 
+author_label.pack()
+
 # Create another frame to the right
 management_frame = tk.Frame(root)
 management_frame.pack(side="right", padx=10)  # Add padding to the right frame
