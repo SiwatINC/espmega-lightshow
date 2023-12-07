@@ -24,6 +24,8 @@ def record_frame():
     slider.config(to=len(frames)-1)  # Update the slider range
     slider.set(len(frames)-1)  # Set the slider value to the last frame
     print("Frame recorded")
+    # Update the slider position
+    root.update()
 
 def save_animation():
     filename = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON Files", "*.json")])
@@ -33,12 +35,13 @@ def save_animation():
         print(f"Animation saved to {filename}")
 
 def play_frames():
-    for frame in frames:
+    for frame_index, frame in enumerate(frames):
         for i in range(rows):
             for j in range(columns):
                 element = lightgrid_frame.grid_slaves(row=i, column=j)[0]
                 element.config(bg=frame[i][j])
         root.update()
+        slider.set(frame_index)  # Update the slider position
         root.after(500)  # Delay between frames (in milliseconds)
 
 def scrub_frames(value):
