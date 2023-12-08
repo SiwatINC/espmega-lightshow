@@ -157,13 +157,21 @@ def scrub_frames(value):
     render_frame(frame)
     root.update()
 
-def render_frame(frame):
+def render_frame(frame: list):
     for i in range(rows):
         for j in range(columns):
             element = lightgrid_frame.grid_slaves(row=i, column=j)[0]
+            print(light_grid.get_physical_light(i, j))
+            if light_grid.get_physical_light(i, j) == None:
+                element.config(bg=COLOR_DISABLED)
             element.config(bg=state_to_color(frame[i][j]))
 
-frames = []
+def render_frame_at_index(frame_index: int):
+    frame = frames[frame_index]
+    render_frame(frame)
+            
+
+frames = [[[0]*light_grid.rows]*light_grid.columns]
 
 root = tk.Tk()
 
@@ -241,5 +249,7 @@ save_button.pack()
 # Add a button to load the animation
 load_button = tk.Button(management_frame, text="Load Animation", command=load_animation)
 load_button.pack()
+
+render_frame_at_index(0)
 
 root.mainloop()
