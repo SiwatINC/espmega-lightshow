@@ -11,6 +11,7 @@ class PhysicalLightEntity:
 
 light_server ="192.168.0.26"
 light_server_port = 1883
+rapid_mode = True
 
 # Light state constants
 LIGHT_DISABLED = -1
@@ -81,6 +82,8 @@ class LightGrid:
                         controller = existing_controllers[base_topic]
                     else:
                         controller = ESPMega_standalone(base_topic, light_server, light_server_port)
+                        if rapid_mode:
+                            controller.enable_rapid_response_mode()
                         existing_controllers[base_topic] = controller
                     self.create_physical_light(row_index, column_index, controller, pwm_id)
     def read_light_map_from_file(self, filename: str):
