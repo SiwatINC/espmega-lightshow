@@ -20,6 +20,8 @@ COLOR_ON = "red"
 COLOR_OFF = "white"
 COLOR_DISABLED = "gray"
 
+ENABLE_PHYSICAL_SYNCRONIZATION = True
+
 def state_to_color(state: int):
     if state == LIGHT_ON:
         return COLOR_ON
@@ -80,7 +82,6 @@ class LightGrid:
                     else:
                         controller = ESPMega_standalone(base_topic, light_server, light_server_port)
                         existing_controllers[base_topic] = controller
-
                     self.create_physical_light(row_index, column_index, controller, pwm_id)
     def read_light_map_from_file(self, filename: str):
         with open(filename, "r") as file:
@@ -98,12 +99,13 @@ playback_active: bool = False
 def change_color(event):
     row = event.widget.grid_info()["row"]
     column = event.widget.grid_info()["column"]
-    print(f"Clicked element at row {row}, column {column}")
     if event.widget.cget("bg") != COLOR_DISABLED:
         if event.widget.cget("bg") == COLOR_ON:
             event.widget.config(bg=COLOR_OFF)  # Change the background color to white
         else:
             event.widget.config(bg=COLOR_ON)  # Change the background color to red
+        if(ENABLE_PHYSICAL_SYNCRONIZATION):
+            light_grid.set_light_state(row, column, color_to_state(event.widget.cget("bg")))
 
 def record_frame():
     frame = []
@@ -161,10 +163,13 @@ def render_frame(frame: list):
     for i in range(rows):
         for j in range(columns):
             element = lightgrid_frame.grid_slaves(row=i, column=j)[0]
-            print(light_grid.get_physical_light(i, j))
             if light_grid.get_physical_light(i, j) == None:
                 element.config(bg=COLOR_DISABLED)
-            element.config(bg=state_to_color(frame[i][j]))
+            else:
+                element.config(bg=state_to_color(frame[i][j]))
+                if(ENABLE_PHYSICAL_SYNCRONIZATION):
+                    light_grid.set_light_state(i, j, frame[i][j])
+        
 
 def render_frame_at_index(frame_index: int):
     frame = frames[frame_index]

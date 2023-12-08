@@ -62,7 +62,10 @@
             "base_topic": "/espmega/ProR3",
             "pwm_id": 13
         },
-        null,
+        {
+            "base_topic": "/espmega/ProR3",
+            "pwm_id": 14
+        },
         {
             "base_topic": "/espmega/ProR3",
             "pwm_id": 15
