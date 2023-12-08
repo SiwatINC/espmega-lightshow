@@ -98,6 +98,8 @@ rows = light_grid.rows
 columns = light_grid.columns
 
 global playback_active
+global current_frame
+current_frame = 0
 playback_active: bool = False
 def change_color(event):
     row = event.widget.grid_info()["row"]
@@ -137,29 +139,40 @@ def save_animation():
 def play_frames():
     global animation_id  # Declare animation_id as a global variable
     global playback_active
+    global current_frame
     playback_active = True
-    for frame_index, frame in enumerate(frames):
+    current_frame = slider.get()
+    while current_frame < len(frames):
         if not playback_active:
             break
-        render_frame(frame)
-        root.update()
-        slider.set(frame_index)  # Update the slider position
+        render_frame_at_index(current_frame)
+        slider.set(current_frame)  # Update the slider position
         speed = speed_scale.get()  # Get the value of the speed scale
         delay = int(1000 / speed)  # Calculate the delay between frames based on speed
+        root.update()
         animation_id = root.after(delay)  # Delay between frames (in milliseconds)
+        current_frame = slider.get()
+        current_frame += 1
     repeat = repeat_var.get()  # Get the value of the repeat toggle
     if(repeat and playback_active):
+        current_frame = 0
+        slider.set(current_frame)
         play_frames()
+
+def pause_frames():
+    global playback_active
+    playback_active = False
 
 def stop_frames():
     global playback_active
     playback_active = False
+    slider.set(0)
+    render_frame_at_index(0)
     root.after_cancel(animation_id)
 
 def scrub_frames(value):
     frame_index = int(value)
-    frame = frames[frame_index]
-    render_frame(frame)
+    render_frame_at_index(frame_index)
     root.update()
 
 def render_frame(frame: list):
@@ -208,6 +221,10 @@ playback_frame.pack()
 # Create a button to play the recorded frames
 play_button = tk.Button(playback_frame, text="Play", command=play_frames)
 play_button.pack()
+
+# Create a button to pause the animation
+pause_button = tk.Button(playback_frame, text="Pause", command=pause_frames)
+pause_button.pack()
 
 # Create a button to stop the animation
 stop_button = tk.Button(playback_frame, text="Stop", command=stop_frames)
