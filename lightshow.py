@@ -436,7 +436,7 @@ def change_light_config(event):
     submit_button = tk.Button(light_config_window, text="Submit", command=submit_light_config, pady=5)
     submit_button.pack(pady=5)
 
-    if physical_light.controller != None:
+    if physical_light != None:
         light_enable_checkbox.select()
         base_topic_entry.insert(0, physical_light.controller.base_topic)
         pwm_id_entry.insert(0, physical_light.pwm_channel)
