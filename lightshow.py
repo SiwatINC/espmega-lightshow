@@ -339,6 +339,62 @@ def render_frame(frame: list):
                 if(ENABLE_PHYSICAL_SYNCRONIZATION):
                     light_grid.set_light_state(i, j, frame[i][j])
         
+def change_light_config(event):
+    row = event.widget.grid_info()["row"]
+    column = event.widget.grid_info()["column"]
+    physical_light = light_grid.get_physical_light(row, column)
+    if physical_light:
+        light_config_window = tk.Toplevel(root)
+        light_config_window.title("Light Configuration")
+        light_config_window.geometry("300x200")
+        light_config_window.resizable(False, False)
+
+        # Define variables for the disable checkbox
+        enable_var = tk.BooleanVar()
+
+        def submit_light_config():
+            base_topic = base_topic_entry.get()
+            pwm_id = int(pwm_id_entry.get())
+            physical_light.controller = ESPMega_standalone(base_topic, light_server, light_server_port)
+            physical_light.pwm_channel = pwm_id
+            light_config_window.destroy()
+
+        def checkbox_callback():
+            print("Checkbox state: " + str(enable_var.get()))
+            if enable_var.get():
+                base_topic_entry.setvar("state", "normal")
+                pwm_id_entry.setvar("state", "normal")
+            else:
+                base_topic_entry.setvar("state", "disabled")
+                pwm_id_entry.setvar("state", "disabled")
+
+        light_enable_checkbox = tk.Checkbutton(light_config_window, text="Enable", command=checkbox_callback, variable=enable_var)
+        light_enable_checkbox.pack()
+
+        base_topic_label = tk.Label(light_config_window, text="Base Topic")
+        base_topic_label.pack()
+        base_topic_entry = tk.Entry(light_config_window)
+        base_topic_entry.pack()
+
+        pwm_id_label = tk.Label(light_config_window, text="PWM ID")
+        pwm_id_label.pack()
+        pwm_id_entry = tk.Entry(light_config_window)
+        pwm_id_entry.pack()
+
+        submit_button = tk.Button(light_config_window, text="Submit", command=submit_light_config, pady=5)
+        submit_button.pack(pady=5)
+
+        if physical_light.controller != None:
+            light_enable_checkbox.select()
+            base_topic_entry.insert(0, physical_light.controller.base_topic)
+            pwm_id_entry.insert(0, physical_light.pwm_channel)
+        else:
+            light_enable_checkbox.deselect()
+            base_topic_entry.setvar("state", "disabled")
+            pwm_id_entry.setvar("state", "disabled")
+
+        light_config_window.mainloop()
+
 
 def render_frame_at_index(frame_index: int):
     frame = frames[frame_index]
@@ -429,6 +485,7 @@ for i in range(rows):
         element = tk.Frame(lightgrid_frame, width=50, height=50, bg="white", highlightthickness=1, highlightbackground="black")
         element.grid(row=i, column=j)
         element.bind("<Button-1>", change_color)  # Bind left mouse click event to change_color function
+        element.bind("<Button-3>", change_light_config)  # Bind right mouse click event to change_light_config function
 
 def load_animation():
     global frames
