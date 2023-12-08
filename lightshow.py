@@ -12,6 +12,30 @@ class PhysicalLightEntity:
 light_server ="192.168.0.26"
 light_server_port = 1883
 
+# Light state constants
+LIGHT_DISABLED = -1
+LIGHT_OFF = 0
+LIGHT_ON = 1
+COLOR_ON = "red"
+COLOR_OFF = "white"
+COLOR_DISABLED = "gray"
+
+def state_to_color(state: int):
+    if state == LIGHT_ON:
+        return COLOR_ON
+    elif state == LIGHT_OFF:
+        return COLOR_OFF
+    else:
+        return COLOR_DISABLED
+
+def color_to_state(color: str):
+    if color == COLOR_ON:
+        return LIGHT_ON
+    elif color == COLOR_OFF:
+        return LIGHT_OFF
+    else:
+        return LIGHT_DISABLED
+
 # Light map data structure example
 light_map = [[{"base_topic": "espmega/1","pwm_id":0},{"base_topic": "espmega/1","pwm_id":1},{"base_topic": "espmega/1","pwm_id":2}],
             [{"base_topic": "espmega/2","pwm_id":0},{"base_topic": "espmega/2","pwm_id":1},{"base_topic": "espmega/2","pwm_id":2}]]
@@ -55,11 +79,11 @@ def change_color(event):
     row = event.widget.grid_info()["row"]
     column = event.widget.grid_info()["column"]
     print(f"Clicked element at row {row}, column {column}")
-    
-    if event.widget.cget("bg") == "red":
-        event.widget.config(bg="white")  # Change the background color to white
-    else:
-        event.widget.config(bg="red")  # Change the background color to red
+    if event.widget.cget("bg") != COLOR_DISABLED:
+        if event.widget.cget("bg") == COLOR_ON:
+            event.widget.config(bg=COLOR_OFF)  # Change the background color to white
+        else:
+            event.widget.config(bg=COLOR_ON)  # Change the background color to red
 
 def record_frame():
     frame = []
@@ -67,7 +91,9 @@ def record_frame():
         row = []
         for j in range(columns):
             element = lightgrid_frame.grid_slaves(row=i, column=j)[0]
-            row.append(element.cget("bg"))
+            element_color = element.cget("bg")
+            element_state = color_to_state(element_color)
+            row.append(element_state)
         frame.append(row)
     frames.append(frame)
     slider.config(to=len(frames)-1)  # Update the slider range
@@ -115,7 +141,7 @@ def render_frame(frame):
     for i in range(rows):
         for j in range(columns):
             element = lightgrid_frame.grid_slaves(row=i, column=j)[0]
-            element.config(bg=frame[i][j])
+            element.config(bg=state_to_color(frame[i][j]))
 
 frames = []
 
