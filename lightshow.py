@@ -360,13 +360,12 @@ def change_light_config(event):
             light_config_window.destroy()
 
         def checkbox_callback():
-            print("Checkbox state: " + str(enable_var.get()))
             if enable_var.get():
-                base_topic_entry.setvar("state", "normal")
-                pwm_id_entry.setvar("state", "normal")
+                base_topic_entry.configure(state="normal")
+                pwm_id_entry.configure(state="normal")
             else:
-                base_topic_entry.setvar("state", "disabled")
-                pwm_id_entry.setvar("state", "disabled")
+                base_topic_entry.configure(state="disabled")
+                pwm_id_entry.configure(state="disabled")
 
         light_enable_checkbox = tk.Checkbutton(light_config_window, text="Enable", command=checkbox_callback, variable=enable_var)
         light_enable_checkbox.pack()
@@ -390,8 +389,8 @@ def change_light_config(event):
             pwm_id_entry.insert(0, physical_light.pwm_channel)
         else:
             light_enable_checkbox.deselect()
-            base_topic_entry.setvar("state", "disabled")
-            pwm_id_entry.setvar("state", "disabled")
+            base_topic_entry.configure(state="disabled")
+            pwm_id_entry.configure(state="disabled")
 
         light_config_window.mainloop()
 
