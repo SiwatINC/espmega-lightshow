@@ -478,7 +478,7 @@ def change_light_config(event):
         state = "Offline"
     else:
         state = "Online"
-    state_label = tk.Label(light_config_window, text=f"This light is currently: {state if !design_mode else "Simulated"}")
+    state_label = tk.Label(light_config_window, text=f"This light is currently: {state if not design_mode else 'Simulated'}")
     state_label.pack()
 
     light_enable_checkbox = tk.Checkbutton(light_config_window, text="Enable", command=checkbox_callback, variable=enable_var)
