@@ -18,6 +18,7 @@ global light_server
 global light_server_port
 global rapid_mode
 global light_map_file
+global light_grid
 
 light_map_file = ""  # Default light map file
 
@@ -38,7 +39,7 @@ except FileNotFoundError:
 # Create a tkinter gui window ask for the light server ip and port and whether to enable rapid response mode
 root = tk.Tk()
 root.title("ELS Pre-Flight")
-root.geometry("250x200")
+root.geometry("250x250")
 root.resizable(False, False)
 
 def submit_config():
@@ -89,12 +90,48 @@ light_map_label = tk.Label(root, text="Light Map File")
 light_map_label.pack()
 
 # Create a button to open a file dialog asking to select the light map file
-light_map_button = tk.Button(root, text="Select Light Map", command=open_light_map_file_chooser_dialog)
+light_map_button = tk.Button(root, text="Browse..."if light_map_file=="" else light_map_file, command=open_light_map_file_chooser_dialog)
 light_map_button.pack(pady=5)
 
 # Create a button to submit the configuration and close the window
 submit_button = tk.Button(root, text="Submit", command=submit_config, pady=5)
 submit_button.pack(pady=5)
+
+def open_generate_light_map_template_window():
+    light_map_generator_window = tk.Toplevel(root)
+    light_map_generator_window.title("Light Map Generator")
+    light_map_generator_window.geometry("250x150")
+    light_map_generator_window.resizable(False, False)
+
+    # Create a field to enter the number of rows
+    light_map_rows_label = tk.Label(light_map_generator_window, text="Number of Rows")
+    light_map_rows_label.pack()
+    light_map_rows_entry = tk.Entry(light_map_generator_window)
+    light_map_rows_entry.pack()
+
+    # Create a field to enter the number of columns
+    light_map_columns_label = tk.Label(light_map_generator_window, text="Number of Columns")
+    light_map_columns_label.pack()
+    light_map_columns_entry = tk.Entry(light_map_generator_window)
+    light_map_columns_entry.pack()
+
+    def submit_light_map_template():
+        rows = int(light_map_rows_entry.get())
+        columns = int(light_map_columns_entry.get())
+        light_map = [[None]*columns]*rows
+        # Ask the user where to save the light map template
+        filename = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON Files", "*.json")])
+        with open(filename, "w") as file:
+            json.dump(light_map, file)
+        light_map_generator_window.destroy()
+
+    # Create a button to submit the configuration and close the window
+    submit_button = tk.Button(light_map_generator_window, text="Submit", command=submit_light_map_template, pady=5)
+    submit_button.pack(pady=5)
+
+# Create a button to generate a template light map file with the specified dimensions with all lights disabled
+light_map_generate_button = tk.Button(root, text="Generate Light Map Template", command=open_generate_light_map_template_window)
+light_map_generate_button.pack(pady=5)
 
 # Fill in the default values
 light_server_entry.insert(0, light_server)
@@ -154,11 +191,11 @@ class LightGrid:
             return None
 
     def read_light_map(self, light_map: list):
+        self.light_map = light_map
         self.rows = len(light_map)
         self.columns = len(light_map[0])
         self.lights = [None] * self.rows * self.columns
         self.controllers = {}  # Dictionary to store existing controllers
-        self.light_map = []  # List to store the light map
 
         for row_index, row in enumerate(light_map):
             for column_index, light in enumerate(row):
@@ -186,8 +223,8 @@ class LightGrid:
     def read_light_map_from_file(self, filename: str):
         try:
             with open(filename, "r") as file:
-                self.light_map = json.load(file)
-            self.read_light_map(self.light_map)
+                light_map = json.load(file)
+            self.read_light_map(light_map)
         except FileNotFoundError:
             messagebox.showerror("File Not Found", f"The file {filename} could not be found.")
         except Exception as e:
@@ -340,71 +377,75 @@ def change_light_config(event):
     row = event.widget.grid_info()["row"]
     column = event.widget.grid_info()["column"]
     physical_light = light_grid.get_physical_light(row, column)
-    if physical_light:
-        light_config_window = tk.Toplevel(root)
-        light_config_window.title("Light Configuration")
-        light_config_window.geometry("300x200")
-        light_config_window.resizable(False, False)
+    light_config_window = tk.Toplevel(root)
+    light_config_window.geometry("250x150")
+    light_config_window.title("Light Config")
+    light_config_window.resizable(False, False)
 
-        # Define variables for the disable checkbox
-        enable_var = tk.BooleanVar()
+    # Define variables for the disable checkbox
+    enable_var = tk.BooleanVar()
 
-        def submit_light_config():
-            if enable_var.get():
-                physical_light_config = {"base_topic": base_topic_entry.get(), "pwm_id": int(pwm_id_entry.get())}
-            else:
-                physical_light_config = None
-
-            # Update the light map
-            print(f"Updating light map at {row}, {column}")
-            # modified_light_map = light_grid.light_map
-            # modified_light_map[row][column] = physical_light_config
-            
-            # # Save the light map to the file
-            # with open(light_map_file, "w") as file:
-            #     json.dump(light_map, file)
-
-            # # Reload the light_grid
-            # light_grid = LightGrid()
-            # light_grid.read_light_map(modified_light_map)
-
-            # Close the window
-            light_config_window.destroy()
-
-        def checkbox_callback():
-            if enable_var.get():
-                base_topic_entry.configure(state="normal")
-                pwm_id_entry.configure(state="normal")
-            else:
-                base_topic_entry.configure(state="disabled")
-                pwm_id_entry.configure(state="disabled")
-
-        light_enable_checkbox = tk.Checkbutton(light_config_window, text="Enable", command=checkbox_callback, variable=enable_var)
-        light_enable_checkbox.pack()
-
-        base_topic_label = tk.Label(light_config_window, text="Base Topic")
-        base_topic_label.pack()
-        base_topic_entry = tk.Entry(light_config_window)
-        base_topic_entry.pack()
-
-        pwm_id_label = tk.Label(light_config_window, text="PWM ID")
-        pwm_id_label.pack()
-        pwm_id_entry = tk.Entry(light_config_window)
-        pwm_id_entry.pack()
-
-        submit_button = tk.Button(light_config_window, text="Submit", command=submit_light_config, pady=5)
-        submit_button.pack(pady=5)
-
-        if physical_light.controller != None:
-            light_enable_checkbox.select()
-            base_topic_entry.insert(0, physical_light.controller.base_topic)
-            pwm_id_entry.insert(0, physical_light.pwm_channel)
+    def submit_light_config():
+        global light_grid
+        if enable_var.get():
+            physical_light_config = {"base_topic": base_topic_entry.get(), "pwm_id": int(pwm_id_entry.get())}
         else:
-            light_enable_checkbox.deselect()
+            physical_light_config = None
+
+        # Update the light map
+        print(f"Updating light map at {row}, {column}")
+        modified_light_map = light_grid.light_map
+        print(modified_light_map)
+        modified_light_map[row][column] = physical_light_config
+        
+        # Save the light map to the file
+        with open(light_map_file, "w") as file:
+            json.dump(light_grid.light_map, file)
+
+        # Reload the light_grid
+        light_grid = LightGrid()
+        light_grid.read_light_map(modified_light_map)
+
+        render_frame_at_index(slider.get())
+        root.update()
+        
+        # Close the window
+        light_config_window.destroy()
+
+    def checkbox_callback():
+        if enable_var.get():
+            base_topic_entry.configure(state="normal")
+            pwm_id_entry.configure(state="normal")
+        else:
             base_topic_entry.configure(state="disabled")
             pwm_id_entry.configure(state="disabled")
 
-        light_config_window.mainloop()
+    light_enable_checkbox = tk.Checkbutton(light_config_window, text="Enable", command=checkbox_callback, variable=enable_var)
+    light_enable_checkbox.pack()
+
+    base_topic_label = tk.Label(light_config_window, text="Base Topic")
+    base_topic_label.pack()
+    base_topic_entry = tk.Entry(light_config_window)
+    base_topic_entry.pack()
+
+    pwm_id_label = tk.Label(light_config_window, text="PWM ID")
+    pwm_id_label.pack()
+    pwm_id_entry = tk.Entry(light_config_window)
+    pwm_id_entry.pack()
+
+    submit_button = tk.Button(light_config_window, text="Submit", command=submit_light_config, pady=5)
+    submit_button.pack(pady=5)
+
+    if physical_light.controller != None:
+        light_enable_checkbox.select()
+        base_topic_entry.insert(0, physical_light.controller.base_topic)
+        pwm_id_entry.insert(0, physical_light.pwm_channel)
+    else:
+        light_enable_checkbox.deselect()
+        base_topic_entry.configure(state="disabled")
+        pwm_id_entry.configure(state="disabled")
+
+    light_config_window.mainloop()
 
 
 def render_frame_at_index(frame_index: int):
