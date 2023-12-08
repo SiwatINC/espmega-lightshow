@@ -130,10 +130,6 @@ def color_to_state(color: str):
     else:
         return LIGHT_DISABLED
 
-# Light map data structure example
-light_map = [[{"base_topic": "espmega/1","pwm_id":0},{"base_topic": "espmega/1","pwm_id":1},{"base_topic": "espmega/1","pwm_id":2}],
-            [{"base_topic": "espmega/2","pwm_id":0},{"base_topic": "espmega/2","pwm_id":1},{"base_topic": "espmega/2","pwm_id":2}]]
-
 class LightGrid:
     def __init__(self, rows: int = 0, columns: int = 0):
         self.rows = rows
@@ -162,6 +158,7 @@ class LightGrid:
         self.columns = len(light_map[0])
         self.lights = [None] * self.rows * self.columns
         self.controllers = {}  # Dictionary to store existing controllers
+        self.light_map = []  # List to store the light map
 
         for row_index, row in enumerate(light_map):
             for column_index, light in enumerate(row):
@@ -189,8 +186,8 @@ class LightGrid:
     def read_light_map_from_file(self, filename: str):
         try:
             with open(filename, "r") as file:
-                light_map = json.load(file)
-            self.read_light_map(light_map)
+                self.light_map = json.load(file)
+            self.read_light_map(self.light_map)
         except FileNotFoundError:
             messagebox.showerror("File Not Found", f"The file {filename} could not be found.")
         except Exception as e:
@@ -353,10 +350,25 @@ def change_light_config(event):
         enable_var = tk.BooleanVar()
 
         def submit_light_config():
-            base_topic = base_topic_entry.get()
-            pwm_id = int(pwm_id_entry.get())
-            physical_light.controller = ESPMega_standalone(base_topic, light_server, light_server_port)
-            physical_light.pwm_channel = pwm_id
+            if enable_var.get():
+                physical_light_config = {"base_topic": base_topic_entry.get(), "pwm_id": int(pwm_id_entry.get())}
+            else:
+                physical_light_config = None
+
+            # Update the light map
+            print(f"Updating light map at {row}, {column}")
+            # modified_light_map = light_grid.light_map
+            # modified_light_map[row][column] = physical_light_config
+            
+            # # Save the light map to the file
+            # with open(light_map_file, "w") as file:
+            #     json.dump(light_map, file)
+
+            # # Reload the light_grid
+            # light_grid = LightGrid()
+            # light_grid.read_light_map(modified_light_map)
+
+            # Close the window
             light_config_window.destroy()
 
         def checkbox_callback():
