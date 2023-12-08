@@ -145,12 +145,43 @@ def record_frame():
     # Update the slider position
     root.update()
 
+def delete_frame():
+    frame_index = slider.get()
+    frames.pop(frame_index)
+    slider.config(to=len(frames)-1)  # Update the slider range
+    if frame_index > 0:
+        slider.set(frame_index-1)
+        render_frame_at_index(frame_index-1)
+    else:
+        slider.set(0)
+        render_frame_at_index(0)
+    # Update the slider position
+    root.update()
+
 def save_animation():
     filename = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON Files", "*.json")])
     if filename:
         with open(filename, "w") as file:
             json.dump(frames, file)
         print(f"Animation saved to {filename}")
+
+def move_frame_left():
+    print("Move frame left")
+    frame_index = slider.get()
+    if frame_index > 0:
+        frames[frame_index], frames[frame_index-1] = frames[frame_index-1], frames[frame_index]
+        slider.set(frame_index-1)
+        render_frame_at_index(frame_index-1)
+    root.update()
+
+def move_frame_right():
+    print("Move frame right")
+    frame_index = slider.get()
+    if frame_index < len(frames)-1:
+        frames[frame_index], frames[frame_index+1] = frames[frame_index+1], frames[frame_index]
+        slider.set(frame_index+1)
+        render_frame_at_index(frame_index+1)
+    root.update()
 
 def play_frames():
     global animation_id  # Declare animation_id as a global variable
@@ -249,6 +280,18 @@ pause_button.pack()
 # Create a button to stop the animation
 stop_button = tk.Button(playback_frame, text="Stop", command=stop_frames)
 stop_button.pack()
+
+# Create a button to delete the current frame
+delete_frame_button = tk.Button(playback_frame, text="Delete Frame", command=delete_frame)
+delete_frame_button.pack()
+
+# Create a button to move the current frame left
+move_frame_left_button = tk.Button(playback_frame, text="Move Frame Left", command=move_frame_left)
+move_frame_left_button.pack()
+
+# Create a button to move the current frame right
+move_frame_right_button = tk.Button(playback_frame, text="Move Frame Right", command=move_frame_right)
+move_frame_right_button.pack()
 
 # Create a button to record a frame
 add_frame_button = tk.Button(playback_frame, text="Add Frame", command=add_frame)
