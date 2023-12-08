@@ -4,6 +4,9 @@ from tkinter import filedialog
 from espmega.espmega_r3 import ESPMega_standalone, ESPMega_slave, ESPMega
 from dataclasses import dataclass
 import sys
+import json
+import sys
+from tkinter import messagebox
 import tkinter.messagebox as messagebox
 
 @dataclass
@@ -93,10 +96,17 @@ class LightGrid:
                     except Exception as e:
                         messagebox.showerror("Controller Error", str(e))
                         sys.exit(1)
+
     def read_light_map_from_file(self, filename: str):
-        with open(filename, "r") as file:
-            light_map = json.load(file)
-        self.read_light_map(light_map)
+        try:
+            with open(filename, "r") as file:
+                light_map = json.load(file)
+            self.read_light_map(light_map)
+        except FileNotFoundError:
+            messagebox.showerror("File Not Found", f"The file {filename} could not be found.")
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+            sys.exit(1)
 
 # Load light map from light_map.json
 light_grid = LightGrid()
