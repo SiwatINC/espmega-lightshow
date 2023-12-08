@@ -39,6 +39,9 @@ class LightGrid:
         for row_index, row in enumerate(light_map):
             for column_index, light in enumerate(row):
                 self.create_physical_light(row_index, column_index, ESPMega_standalone(light["base_topic"], light_server, light_server_port), light["pwm_id"])
+
+global playback_active
+playback_active: bool = False
 def change_color(event):
     row = event.widget.grid_info()["row"]
     column = event.widget.grid_info()["column"]
@@ -72,17 +75,26 @@ def save_animation():
         print(f"Animation saved to {filename}")
 
 def play_frames():
+    global animation_id  # Declare animation_id as a global variable
+    global playback_active
+    playback_active = True
     for frame_index, frame in enumerate(frames):
+        if not playback_active:
+            break
         render_frame(frame)
         root.update()
         slider.set(frame_index)  # Update the slider position
         speed = speed_scale.get()  # Get the value of the speed scale
         delay = int(1000 / speed)  # Calculate the delay between frames based on speed
-        root.after(delay)  # Delay between frames (in milliseconds)
-
+        animation_id = root.after(delay)  # Delay between frames (in milliseconds)
     repeat = repeat_var.get()  # Get the value of the repeat toggle
-    if(repeat):
+    if(repeat and playback_active):
         play_frames()
+
+def stop_frames():
+    global playback_active
+    playback_active = False
+    root.after_cancel(animation_id)
 
 def scrub_frames(value):
     frame_index = int(value)
@@ -103,6 +115,9 @@ columns = 6
 
 root = tk.Tk()
 
+root.title("ESPMega Light Show")
+
+
 # Create a label for the title
 title_label = tk.Label(root, text="ESPMega Light Show", font=("Arial", 24))
 title_label.pack()
@@ -119,12 +134,19 @@ author_label.pack()
 management_frame = tk.Frame(root)
 management_frame.pack(side="right", padx=10)  # Add padding to the right frame
 
+playback_frame = tk.Frame(management_frame)
+playback_frame.pack()
+
 # Create a button to play the recorded frames
-play_button = tk.Button(management_frame, text="Play Frames", command=play_frames)
+play_button = tk.Button(playback_frame, text="Play", command=play_frames)
 play_button.pack()
 
+# Create a button to stop the animation
+stop_button = tk.Button(playback_frame, text="Stop", command=stop_frames)
+stop_button.pack()
+
 # Create a button to record a frame
-record_button = tk.Button(management_frame, text="Record Frame", command=record_frame)
+record_button = tk.Button(playback_frame, text="Record", command=record_frame)
 record_button.pack()
 
 # Create a slider to scrub through recorded frames
