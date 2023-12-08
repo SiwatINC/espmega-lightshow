@@ -164,7 +164,7 @@ def play_frames():
         render_frame_at_index(current_frame)
         slider.set(current_frame)  # Update the slider position
         speed = speed_scale.get()  # Get the value of the speed scale
-        delay = int(1000 / speed)  # Calculate the delay between frames based on speed
+        delay = int(3000 / speed)  # Calculate the delay between frames based on speed
         root.update()
         animation_id = root.after(delay)  # Delay between frames (in milliseconds)
         current_frame = slider.get()
@@ -234,6 +234,10 @@ management_frame.pack(side="right", padx=10)  # Add padding to the right frame
 playback_frame = tk.Frame(management_frame)
 playback_frame.pack()
 
+# Create a text label for the playback controls
+playback_label = tk.Label(playback_frame, text="Playback Controls", font=("Arial", 10))
+playback_label.pack()
+
 # Create a button to play the recorded frames
 play_button = tk.Button(playback_frame, text="Play", command=play_frames)
 play_button.pack()
@@ -286,6 +290,10 @@ def load_animation():
         slider.config(to=len(frames)-1)  # Update the slider range
         slider.set(0)  # Set the slider value to the first frame
         print(f"Animation loaded from {filename}")
+
+# Create a label for the Save/Load section
+save_load_label = tk.Label(management_frame, text="File Management", font=("Arial", 10))
+save_load_label.pack()
 
 # Create a button to save the animation
 save_button = tk.Button(management_frame, text="Save Animation", command=save_animation)
