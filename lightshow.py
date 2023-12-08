@@ -145,9 +145,9 @@ root.mainloop()
 LIGHT_DISABLED = -1
 LIGHT_OFF = 0
 LIGHT_ON = 1
-COLOR_ON = "magenta"
-COLOR_OFF = "white"
-COLOR_DISABLED = "gray"
+COLOR_ON = "white"
+COLOR_OFF = "gray"
+COLOR_DISABLED = "gray12"
 COLOR_OFF_OFFLINE = "brown4"
 COLOR_ON_OFFLINE = "red"
 
@@ -396,7 +396,7 @@ def change_light_config(event):
     column = event.widget.grid_info()["column"]
     physical_light = light_grid.get_physical_light(row, column)
     light_config_window = tk.Toplevel(root)
-    light_config_window.geometry("250x170")
+    light_config_window.geometry("250x190")
     light_config_window.title("Light Config")
     light_config_window.resizable(False, False)
 
@@ -406,7 +406,20 @@ def change_light_config(event):
     def submit_light_config():
         global light_grid
         if enable_var.get():
-            physical_light_config = {"base_topic": base_topic_entry.get(), "pwm_id": int(pwm_id_entry.get())}
+            base_topic = base_topic_entry.get()
+            pwm_id = pwm_id_entry.get()
+            if base_topic == "":
+                messagebox.showerror("Error", "Please enter a base topic.")
+                return
+            elif pwm_id == "":
+                messagebox.showerror("Error", "Please enter a PWM ID.")
+                return
+            try:
+                pwm_id = int(pwm_id)
+            except ValueError:
+                messagebox.showerror("Error", "The PWM ID must be an integer.")
+                return
+            physical_light_config = {"base_topic": base_topic, "pwm_id": pwm_id}
         else:
             physical_light_config = None
 
