@@ -213,12 +213,12 @@ class LightGrid:
                             if rapid_mode:
                                 controller.enable_rapid_response_mode()
                             self.controllers[base_topic] = controller
+                            self.create_physical_light(row_index, column_index, controller, pwm_id)
+                            self.set_light_state(row_index, column_index, False)
                     except Exception as e:
-                        messagebox.showerror("Controller Error", f'The controller at {base_topic} is throwing an error: {e}')
-                        sys.exit(1)
-
-                    self.create_physical_light(row_index, column_index, controller, pwm_id)
-                    self.set_light_state(row_index, column_index, False)
+                        messagebox.showerror("Controller Error", f'The controller at {base_topic} is throwing an error:\n{e}\n\nPlease note that the controller must be connected to the network and running the ESPMega firmware.\n\nYou may continue without this light, but it will not be able to be controlled.')
+                        self.assign_physical_light(row_index, column_index, None)
+                    
 
     def read_light_map_from_file(self, filename: str):
         try:
@@ -378,7 +378,7 @@ def change_light_config(event):
     column = event.widget.grid_info()["column"]
     physical_light = light_grid.get_physical_light(row, column)
     light_config_window = tk.Toplevel(root)
-    light_config_window.geometry("250x150")
+    light_config_window.geometry("250x170")
     light_config_window.title("Light Config")
     light_config_window.resizable(False, False)
 
@@ -420,6 +420,9 @@ def change_light_config(event):
             base_topic_entry.configure(state="disabled")
             pwm_id_entry.configure(state="disabled")
 
+    position_label = tk.Label(light_config_window, text=f"Configuring Light at {row+1}, {column+1}")
+    position_label.pack()
+
     light_enable_checkbox = tk.Checkbutton(light_config_window, text="Enable", command=checkbox_callback, variable=enable_var)
     light_enable_checkbox.pack()
 
@@ -436,10 +439,11 @@ def change_light_config(event):
     submit_button = tk.Button(light_config_window, text="Submit", command=submit_light_config, pady=5)
     submit_button.pack(pady=5)
 
-    if physical_light != None:
+    print(light_grid.light_map[row][column])
+    if light_grid.light_map[row][column] != None:
         light_enable_checkbox.select()
-        base_topic_entry.insert(0, physical_light.controller.base_topic)
-        pwm_id_entry.insert(0, physical_light.pwm_channel)
+        base_topic_entry.insert(0, light_grid.light_map[row][column]["base_topic"])
+        pwm_id_entry.insert(0, light_grid.light_map[row][column]["pwm_id"])
     else:
         light_enable_checkbox.deselect()
         base_topic_entry.configure(state="disabled")
