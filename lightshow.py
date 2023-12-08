@@ -267,6 +267,8 @@ def set_tile_state(row: int, column: int, state: bool):
             element.config(bg=COLOR_ON)
         else:
             element.config(bg=COLOR_OFF)
+    if(ENABLE_PHYSICAL_SYNCRONIZATION and light_state != -1):
+        light_grid.set_light_state(row, column, state)
 
 def get_tile_state(row: int, column: int):
     element = lightgrid_frame.grid_slaves(row=row, column=column)[0]
@@ -278,10 +280,7 @@ def get_tile_state(row: int, column: int):
 def change_color(event):
     row = event.widget.grid_info()["row"]
     column = event.widget.grid_info()["column"]
-    light_state = check_light_online(row, column)
     set_tile_state(row, column, not get_tile_state(row, column))
-    if(ENABLE_PHYSICAL_SYNCRONIZATION and light_state != -1):
-        light_grid.set_light_state(row, column, color_to_state(event.widget.cget("bg")))
 
 def add_frame():
     frame = []
