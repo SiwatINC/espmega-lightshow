@@ -145,7 +145,7 @@ root.mainloop()
 LIGHT_DISABLED = -1
 LIGHT_OFF = 0
 LIGHT_ON = 1
-COLOR_ON = "purple"
+COLOR_ON = "magenta"
 COLOR_OFF = "white"
 COLOR_DISABLED = "gray"
 COLOR_OFF_OFFLINE = "brown4"
@@ -307,7 +307,7 @@ def record_frame():
         for j in range(columns):
             element_state = get_tile_state(i, j)
             row.append(element_state)
-        frame.append(row)/
+        frame.append(row)
     frames[frame_index] = frame
     render_frame_at_index(frame_index)
     print(frames)
@@ -447,6 +447,16 @@ def change_light_config(event):
     position_label = tk.Label(light_config_window, text=f"Configuring Light at {row+1}, {column+1}")
     position_label.pack()
 
+    state = ""
+    if check_light_online(row, column) == -1:
+        state = "Disabled"
+    elif check_light_online(row, column) == 0:
+        state = "Offline"
+    else:
+        state = "Online"
+    state_label = tk.Label(light_config_window, text=f"This light is currently: {state}")
+    state_label.pack()
+    
     light_enable_checkbox = tk.Checkbutton(light_config_window, text="Enable", command=checkbox_callback, variable=enable_var)
     light_enable_checkbox.pack()
 
