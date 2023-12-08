@@ -1,2 +1,5 @@
 
 animation.json
+build/
+dist/
+*.spec

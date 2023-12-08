@@ -3,6 +3,8 @@ import json
 from tkinter import filedialog
 from espmega.espmega_r3 import ESPMega_standalone, ESPMega_slave, ESPMega
 from dataclasses import dataclass
+import sys
+import tkinter.messagebox as messagebox
 
 @dataclass
 class PhysicalLightEntity:
@@ -64,6 +66,7 @@ class LightGrid:
             return physical_light.controller.get_pwm_state(physical_light.pwm_channel)
         else:
             return None
+
     def read_light_map(self, light_map: list):
         self.rows = len(light_map)
         self.columns = len(light_map[0])
@@ -78,14 +81,18 @@ class LightGrid:
                     base_topic = light["base_topic"]
                     pwm_id = light["pwm_id"]
 
-                    if base_topic in existing_controllers:
-                        controller = existing_controllers[base_topic]
-                    else:
-                        controller = ESPMega_standalone(base_topic, light_server, light_server_port)
-                        if rapid_mode:
-                            controller.enable_rapid_response_mode()
-                        existing_controllers[base_topic] = controller
-                    self.create_physical_light(row_index, column_index, controller, pwm_id)
+                    try:
+                        if base_topic in existing_controllers:
+                            controller = existing_controllers[base_topic]
+                        else:
+                            controller = ESPMega_standalone(base_topic, light_server, light_server_port)
+                            if rapid_mode:
+                                controller.enable_rapid_response_mode()
+                            existing_controllers[base_topic] = controller
+                        self.create_physical_light(row_index, column_index, controller, pwm_id)
+                    except Exception as e:
+                        messagebox.showerror("Controller Error", str(e))
+                        sys.exit(1)
     def read_light_map_from_file(self, filename: str):
         with open(filename, "r") as file:
             light_map = json.load(file)
