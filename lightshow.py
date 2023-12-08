@@ -7,7 +7,6 @@ import sys
 import json
 import sys
 from tkinter import messagebox
-import atexit
 import tkinter.messagebox as messagebox
 
 @dataclass
@@ -15,9 +14,95 @@ class PhysicalLightEntity:
     controller: ESPMega
     pwm_channel: int
 
-light_server ="192.168.0.26"
-light_server_port = 1883
-rapid_mode = True
+global light_server
+global light_server_port
+global rapid_mode
+global light_map_file
+
+light_map_file = ""  # Default light map file
+
+# Load config.json if it exists
+try:
+    with open("config.json", "r") as file:
+        config = json.load(file)
+    light_server = config["light_server"]
+    light_server_port = config["light_server_port"]
+    rapid_mode = config["rapid_mode"]
+    light_map_file = config["light_map_file"]
+except FileNotFoundError:
+    light_server = ""
+    light_server_port = 1883
+    rapid_mode = False
+    light_map_file = ""
+
+# Create a tkinter gui window ask for the light server ip and port and whether to enable rapid response mode
+root = tk.Tk()
+root.title("ELS Pre-Flight")
+root.geometry("250x200")
+root.resizable(False, False)
+
+def submit_config():
+    global light_server
+    global light_server_port
+    global rapid_mode
+    light_server = light_server_entry.get()
+    light_server_port = int(light_server_port_entry.get())
+    rapid_mode = rapid_mode_var.get()
+    if light_server == "":
+        messagebox.showerror("Error", "Please enter the light server ip.")
+        return
+    if light_server_port == "":
+        messagebox.showerror("Error", "Please enter the light server port.")
+        return
+    if light_map_file == "":
+        messagebox.showerror("Error", "Please select a light map file.")
+        return
+    # Save the config to config.json
+    with open("config.json", "w") as file:
+        json.dump({"light_server": light_server, "light_server_port": light_server_port, "rapid_mode": rapid_mode, "light_map_file": light_map_file}, file)
+    root.destroy()
+
+def open_light_map_file_chooser_dialog():
+    global light_map_file
+    light_map_file = filedialog.askopenfilename(filetypes=[("JSON Files", "*.json")])
+    light_map_button.config(text=light_map_file)
+
+# Create a field to enter the light server ip
+light_server_label = tk.Label(root, text="Light Server IP")
+light_server_label.pack()
+light_server_entry = tk.Entry(root)
+light_server_entry.pack()
+
+# Create a field to enter the light server port
+light_server_port_label = tk.Label(root, text="Light Server Port")
+light_server_port_label.pack()
+light_server_port_entry = tk.Entry(root)
+light_server_port_entry.pack()
+
+# Create a checkbox to enable rapid response mode
+rapid_mode_var = tk.BooleanVar()
+rapid_mode_toggle = tk.Checkbutton(root, text="Enable Rapid Response Mode", variable=rapid_mode_var)
+rapid_mode_toggle.pack()
+
+# Create a text label for the light map file chooser
+light_map_label = tk.Label(root, text="Light Map File")
+light_map_label.pack()
+
+# Create a button to open a file dialog asking to select the light map file
+light_map_button = tk.Button(root, text="Select Light Map", command=open_light_map_file_chooser_dialog)
+light_map_button.pack(pady=5)
+
+# Create a button to submit the configuration and close the window
+submit_button = tk.Button(root, text="Submit", command=submit_config, pady=5)
+submit_button.pack(pady=5)
+
+# Fill in the default values
+light_server_entry.insert(0, light_server)
+light_server_port_entry.insert(0, light_server_port)
+rapid_mode_var.set(rapid_mode)
+
+# Start the tkinter main loop
+root.mainloop()
 
 # Light state constants
 LIGHT_DISABLED = -1
@@ -54,6 +139,7 @@ class LightGrid:
         self.rows = rows
         self.columns = columns
         self.lights: list = [None] * rows * columns
+        self.controllers = {}
     def assign_physical_light(self, row: int, column: int, physical_light: PhysicalLightEntity):
         self.lights[row * self.columns + column] = physical_light
     def get_physical_light(self, row, column):
@@ -75,7 +161,7 @@ class LightGrid:
         self.rows = len(light_map)
         self.columns = len(light_map[0])
         self.lights = [None] * self.rows * self.columns
-        existing_controllers = {}  # Dictionary to store existing controllers
+        self.controllers = {}  # Dictionary to store existing controllers
 
         for row_index, row in enumerate(light_map):
             for column_index, light in enumerate(row):
@@ -86,18 +172,19 @@ class LightGrid:
                     pwm_id = light["pwm_id"]
 
                     try:
-                        if base_topic in existing_controllers:
-                            controller = existing_controllers[base_topic]
+                        if base_topic in self.controllers:
+                            controller = self.controllers[base_topic]
                         else:
                             controller = ESPMega_standalone(base_topic, light_server, light_server_port)
                             if rapid_mode:
                                 controller.enable_rapid_response_mode()
-                            existing_controllers[base_topic] = controller
+                            self.controllers[base_topic] = controller
                     except Exception as e:
                         messagebox.showerror("Controller Error", f'The controller at {base_topic} is throwing an error: {e}')
                         sys.exit(1)
 
                     self.create_physical_light(row_index, column_index, controller, pwm_id)
+                    self.set_light_state(row_index, column_index, False)
 
     def read_light_map_from_file(self, filename: str):
         try:
@@ -112,7 +199,7 @@ class LightGrid:
 
 # Load light map from light_map.json
 light_grid = LightGrid()
-light_grid.read_light_map_from_file(filename="light_map.json")
+light_grid.read_light_map_from_file(filename=light_map_file)
 rows = light_grid.rows
 columns = light_grid.columns
 
@@ -367,14 +454,9 @@ load_button.pack()
 
 render_frame_at_index(0)
 
-def on_exit():
-    # Take all connected controllers out of rapid response mode
-    controllers = set()
-    for row in light_grid.lights:
-        for light in row:
-            if light and light.controller not in controllers:
-                light.controller.disable_rapid_response_mode()
-                controllers.add(light.controller)
-atexit.register(on_exit)
-
 root.mainloop()
+
+# Take all connected controllers out of rapid response mode
+if rapid_mode:
+    for controller in light_grid.controllers.values():
+        controller.disable_rapid_response_mode()
