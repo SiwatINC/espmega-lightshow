@@ -19,6 +19,7 @@ global light_server_port
 global rapid_mode
 global light_map_file
 global light_grid
+global design_mode
 
 light_map_file = ""  # Default light map file
 
@@ -30,16 +31,18 @@ try:
     light_server_port = config["light_server_port"]
     rapid_mode = config["rapid_mode"]
     light_map_file = config["light_map_file"]
+    design_mode = config["design_mode"]
 except FileNotFoundError:
     light_server = ""
     light_server_port = 1883
     rapid_mode = False
     light_map_file = ""
+    design_mode = False
 
 # Create a tkinter gui window ask for the light server ip and port and whether to enable rapid response mode
 root = tk.Tk()
 root.title("ELS Pre-Flight")
-root.geometry("250x250")
+root.geometry("500x275")
 root.resizable(False, False)
 
 def submit_config():
@@ -49,6 +52,7 @@ def submit_config():
     light_server = light_server_entry.get()
     light_server_port = int(light_server_port_entry.get())
     rapid_mode = rapid_mode_var.get()
+    design_mode = design_mode_var.get()
     if light_server == "":
         messagebox.showerror("Error", "Please enter the light server ip.")
         return
@@ -60,13 +64,22 @@ def submit_config():
         return
     # Save the config to config.json
     with open("config.json", "w") as file:
-        json.dump({"light_server": light_server, "light_server_port": light_server_port, "rapid_mode": rapid_mode, "light_map_file": light_map_file}, file)
+        json.dump({"light_server": light_server, "light_server_port": light_server_port, "rapid_mode": rapid_mode, "light_map_file": light_map_file,"design_mode": design_mode}, file)
     root.destroy()
 
 def open_light_map_file_chooser_dialog():
     global light_map_file
     light_map_file = filedialog.askopenfilename(filetypes=[("JSON Files", "*.json")])
     light_map_button.config(text=light_map_file)
+
+# Create a small label to explain design mode
+design_mode_label = tk.Label(root, text="Design mode allows you to play with the lights without connecting to a controller.\nThis is useful for testing lighting designs.")
+design_mode_label.pack()
+
+# Create a design mode toggle
+design_mode_var = tk.BooleanVar()
+design_mode_toggle = tk.Checkbutton(root, text="Design Mode", variable=design_mode_var)
+design_mode_toggle.pack()
 
 # Create a field to enter the light server ip
 light_server_label = tk.Label(root, text="Light Server IP")
@@ -137,10 +150,13 @@ light_map_generate_button.pack(pady=5)
 light_server_entry.insert(0, light_server)
 light_server_port_entry.insert(0, light_server_port)
 rapid_mode_var.set(rapid_mode)
+design_mode_var.set(design_mode)
 
 # Start the tkinter main loop
 root.mainloop()
 
+
+print(design_mode)
 # Light state constants
 LIGHT_DISABLED = -1
 LIGHT_OFF = 0
@@ -170,18 +186,19 @@ def color_to_state(color: str):
         return LIGHT_DISABLED
 
 class LightGrid:
-    def __init__(self, rows: int = 0, columns: int = 0):
+    def __init__(self, rows: int = 0, columns: int = 0, design_mode: bool = False):
         self.rows = rows
         self.columns = columns
         self.lights: list = [None] * rows * columns
         self.controllers = {}
+        self.design_mode = design_mode
     def assign_physical_light(self, row: int, column: int, physical_light: PhysicalLightEntity):
         self.lights[row * self.columns + column] = physical_light
     def get_physical_light(self, row, column):
         return self.lights[row * self.columns + column]
     def set_light_state(self, row: int, column: int, state: bool):
         physical_light = self.get_physical_light(row, column)
-        if physical_light:
+        if physical_light and not self.design_mode:
             physical_light.controller.digital_write(physical_light.pwm_channel, state)
     def create_physical_light(self, row: int, column: int, controller: ESPMega, pwm_channel: int):
         self.assign_physical_light(row, column, PhysicalLightEntity(controller, pwm_channel))
@@ -211,7 +228,10 @@ class LightGrid:
                         if base_topic in self.controllers:
                             controller = self.controllers[base_topic]
                         else:
-                            controller = ESPMega_standalone(base_topic, light_server, light_server_port)
+                            if not self.design_mode:
+                                controller = ESPMega_standalone(base_topic, light_server, light_server_port)
+                            else:
+                                controller = None
                             if rapid_mode:
                                 controller.enable_rapid_response_mode()
                             self.controllers[base_topic] = controller
@@ -234,7 +254,7 @@ class LightGrid:
             sys.exit(1)
 
 # Load light map from light_map.json
-light_grid = LightGrid()
+light_grid = LightGrid(design_mode=design_mode)
 light_grid.read_light_map_from_file(filename=light_map_file)
 rows = light_grid.rows
 columns = light_grid.columns
@@ -431,7 +451,7 @@ def change_light_config(event):
             json.dump(light_grid.light_map, file)
 
         # Reload the light_grid
-        light_grid = LightGrid()
+        light_grid = LightGrid(design_mode=design_mode)
         light_grid.read_light_map(modified_light_map)
 
         render_frame_at_index(slider.get())
@@ -508,6 +528,11 @@ title_label.pack()
 # Create another frame to the bottom
 buttom_frame = tk.Frame(root)
 buttom_frame.pack(side="bottom", padx=10)  # Add padding to the right frame
+
+if(design_mode):
+    # Create a text label for the design mode
+    design_mode_label = tk.Label(buttom_frame, text="You are currently in design mode.\nIn this mode, physical lights will not be controlled.", font=("Arial", 12), fg="red")
+    design_mode_label.pack()
 
 # Create a text label for the author
 author_label = tk.Label(buttom_frame, text="SIWAT SYSTEM 2023", font=("Arial", 12), fg="gray") 
