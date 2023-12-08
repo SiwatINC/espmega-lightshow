@@ -41,7 +41,7 @@ light_map = [[{"base_topic": "espmega/1","pwm_id":0},{"base_topic": "espmega/1",
             [{"base_topic": "espmega/2","pwm_id":0},{"base_topic": "espmega/2","pwm_id":1},{"base_topic": "espmega/2","pwm_id":2}]]
 
 class LightGrid:
-    def __init__(self, rows: int, columns: int):
+    def __init__(self, rows: int = 0, columns: int = 0):
         self.rows = rows
         self.columns = columns
         self.lights: list = [None] * rows * columns
@@ -62,16 +62,36 @@ class LightGrid:
         else:
             return None
     def read_light_map(self, light_map: list):
+        self.rows = len(light_map)
+        self.columns = len(light_map[0])
+        self.lights = [None] * self.rows * self.columns
+        existing_controllers = {}  # Dictionary to store existing controllers
+
         for row_index, row in enumerate(light_map):
             for column_index, light in enumerate(row):
-                self.create_physical_light(row_index, column_index, ESPMega_standalone(light["base_topic"], light_server, light_server_port), light["pwm_id"])
+                if light is None:
+                    self.assign_physical_light(row_index, column_index, None)
+                else:
+                    base_topic = light["base_topic"]
+                    pwm_id = light["pwm_id"]
+
+                    if base_topic in existing_controllers:
+                        controller = existing_controllers[base_topic]
+                    else:
+                        controller = ESPMega_standalone(base_topic, light_server, light_server_port)
+                        existing_controllers[base_topic] = controller
+
+                    self.create_physical_light(row_index, column_index, controller, pwm_id)
+    def read_light_map_from_file(self, filename: str):
+        with open(filename, "r") as file:
+            light_map = json.load(file)
+        self.read_light_map(light_map)
 
 # Load light map from light_map.json
-with open("light_map.json", "r") as file:
-    light_map = json.load(file)
-
-rows = len(light_map)
-columns = len(light_map[0])
+light_grid = LightGrid()
+light_grid.read_light_map_from_file(filename="light_map.json")
+rows = light_grid.rows
+columns = light_grid.columns
 
 global playback_active
 playback_active: bool = False

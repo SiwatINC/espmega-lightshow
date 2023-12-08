@@ -1,74 +1,74 @@
 [
     [
         {
-            "base_topic": "/espmega/1",
+            "base_topic": "/espmega/ProR3",
             "pwm_id": 0
         },
         {
-            "base_topic": "/espmega/1",
+            "base_topic": "/espmega/ProR3",
             "pwm_id": 1
         },
         {
-            "base_topic": "/espmega/1",
+            "base_topic": "/espmega/ProR3",
             "pwm_id": 2
         },
         {
-            "base_topic": "/espmega/1",
+            "base_topic": "/espmega/ProR3",
             "pwm_id": 3
         }
     ],
     [
         {
-            "base_topic": "/espmega/2",
-            "pwm_id": 0
+            "base_topic": "/espmega/ProR3",
+            "pwm_id": 4
         },
         {
-            "base_topic": "/espmega/2",
-            "pwm_id": 1
+            "base_topic": "/espmega/ProR3",
+            "pwm_id": 5
         },
         {
-            "base_topic": "/espmega/2",
-            "pwm_id": 2
+            "base_topic": "/espmega/ProR3",
+            "pwm_id": 6
         },
         {
-            "base_topic": "/espmega/2",
-            "pwm_id": 3
+            "base_topic": "/espmega/ProR3",
+            "pwm_id": 7
         }
     ],
     [
         {
-            "base_topic": "/espmega/3",
-            "pwm_id": 0
+            "base_topic": "/espmega/ProR3",
+            "pwm_id": 8
         },
         {
-            "base_topic": "/espmega/3",
-            "pwm_id": 1
+            "base_topic": "/espmega/ProR3",
+            "pwm_id": 9
         },
         {
-            "base_topic": "/espmega/3",
-            "pwm_id": 2
+            "base_topic": "/espmega/ProR3",
+            "pwm_id": 10
         },
         {
-            "base_topic": "/espmega/3",
-            "pwm_id": 3
+            "base_topic": "/espmega/ProR3",
+            "pwm_id": 11
         }
     ],
     [
         {
-            "base_topic": "/espmega/4",
-            "pwm_id": 0
+            "base_topic": "/espmega/ProR3",
+            "pwm_id": 12
         },
         {
-            "base_topic": "/espmega/4",
-            "pwm_id": 1
+            "base_topic": "/espmega/ProR3",
+            "pwm_id": 13
         },
         {
-            "base_topic": "/espmega/4",
-            "pwm_id": 2
+            "base_topic": "/espmega/ProR3",
+            "pwm_id": 14
         },
         {
-            "base_topic": "/espmega/4",
-            "pwm_id": 3
+            "base_topic": "/espmega/ProR3",
+            "pwm_id": 15
         }
     ]
 ]
