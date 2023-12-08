@@ -7,6 +7,7 @@ import sys
 import json
 import sys
 from tkinter import messagebox
+import atexit
 import tkinter.messagebox as messagebox
 
 @dataclass
@@ -365,5 +366,15 @@ load_button = tk.Button(management_frame, text="Load Animation", command=load_an
 load_button.pack()
 
 render_frame_at_index(0)
+
+def on_exit():
+    # Take all connected controllers out of rapid response mode
+    controllers = set()
+    for row in light_grid.lights:
+        for light in row:
+            if light and light.controller not in controllers:
+                light.controller.disable_rapid_response_mode()
+                controllers.add(light.controller)
+atexit.register(on_exit)
 
 root.mainloop()
