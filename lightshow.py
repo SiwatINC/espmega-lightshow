@@ -112,7 +112,7 @@ def change_color(event):
         if(ENABLE_PHYSICAL_SYNCRONIZATION):
             light_grid.set_light_state(row, column, color_to_state(event.widget.cget("bg")))
 
-def record_frame():
+def add_frame():
     frame = []
     for i in range(rows):
         row = []
@@ -126,6 +126,22 @@ def record_frame():
     slider.config(to=len(frames)-1)  # Update the slider range
     slider.set(len(frames)-1)  # Set the slider value to the last frame
     print("Frame recorded")
+    # Update the slider position
+    root.update()
+
+def record_frame():
+    frame_index = slider.get()
+    frame = []
+    for i in range(rows):
+        row = []
+        for j in range(columns):
+            element = lightgrid_frame.grid_slaves(row=i, column=j)[0]
+            element_color = element.cget("bg")
+            element_state = color_to_state(element_color)
+            row.append(element_state)
+        frame.append(row)
+    frames[frame_index] = frame
+    render_frame_at_index(frame_index)
     # Update the slider position
     root.update()
 
@@ -231,8 +247,12 @@ stop_button = tk.Button(playback_frame, text="Stop", command=stop_frames)
 stop_button.pack()
 
 # Create a button to record a frame
-record_button = tk.Button(playback_frame, text="Record", command=record_frame)
-record_button.pack()
+add_frame_button = tk.Button(playback_frame, text="Add Frame", command=add_frame)
+add_frame_button.pack()
+
+# Create a button to record a frame to the current frame
+record_frame_button = tk.Button(playback_frame, text="Record Frame", command=record_frame)
+record_frame_button.pack()
 
 # Create a slider to scrub through recorded frames
 slider = tk.Scale(management_frame, label="Frame Scrubber", from_=0, to=len(frames)-1, orient="horizontal", command=scrub_frames)
