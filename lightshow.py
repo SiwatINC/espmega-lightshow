@@ -288,9 +288,7 @@ def add_frame():
     for i in range(rows):
         row = []
         for j in range(columns):
-            element = lightgrid_frame.grid_slaves(row=i, column=j)[0]
-            element_color = element.cget("bg")
-            element_state = color_to_state(element_color)
+            element_state = get_tile_state(i, j)
             row.append(element_state)
         frame.append(row)
     frames.append(frame)
@@ -309,10 +307,10 @@ def record_frame():
         for j in range(columns):
             element_state = get_tile_state(i, j)
             row.append(element_state)
-        frame.append(row)
-    print(frame)
+        frame.append(row)/
     frames[frame_index] = frame
     render_frame_at_index(frame_index)
+    print(frames)
     # Update the slider position
     root.update()
 
