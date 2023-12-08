@@ -215,8 +215,8 @@ class LightGrid:
                             if rapid_mode:
                                 controller.enable_rapid_response_mode()
                             self.controllers[base_topic] = controller
-                            self.create_physical_light(row_index, column_index, controller, pwm_id)
-                            self.set_light_state(row_index, column_index, False)
+                        self.create_physical_light(row_index, column_index, controller, pwm_id)
+                        self.set_light_state(row_index, column_index, False)
                     except Exception as e:
                         messagebox.showerror("Controller Error", f'The controller at {base_topic} is throwing an error:\n{e}\n\nPlease note that the controller must be connected to the network and running the ESPMega firmware.\n\nYou may continue without this light, but it will not be able to be controlled.')
                         self.assign_physical_light(row_index, column_index, None)
@@ -248,7 +248,7 @@ playback_active: bool = False
 def check_light_online(row: int, column: int):
     if(light_grid.light_map[row][column] == None):
         return -1
-    if(light_grid.get_light_state(row, column) == None):
+    if(light_grid.get_physical_light(row, column) == None):
         return 0
     return 1
 
@@ -294,12 +294,10 @@ def add_frame():
     frames.append(frame)
     slider.config(to=len(frames)-1)  # Update the slider range
     slider.set(len(frames)-1)  # Set the slider value to the last frame
-    print("Frame recorded")
     # Update the slider position
     root.update()
 
 def record_frame():
-    print("recording frame")
     frame_index = slider.get()
     frame = []
     for i in range(rows):
@@ -310,7 +308,6 @@ def record_frame():
         frame.append(row)
     frames[frame_index] = frame
     render_frame_at_index(frame_index)
-    print(frames)
     # Update the slider position
     root.update()
 
@@ -332,10 +329,8 @@ def save_animation():
     if filename:
         with open(filename, "w") as file:
             json.dump(frames, file)
-        print(f"Animation saved to {filename}")
 
 def move_frame_left():
-    print("Move frame left")
     frame_index = slider.get()
     if frame_index > 0:
         frames[frame_index], frames[frame_index-1] = frames[frame_index-1], frames[frame_index]
@@ -344,7 +339,6 @@ def move_frame_left():
     root.update()
 
 def move_frame_right():
-    print("Move frame right")
     frame_index = slider.get()
     if frame_index < len(frames)-1:
         frames[frame_index], frames[frame_index+1] = frames[frame_index+1], frames[frame_index]
@@ -417,9 +411,7 @@ def change_light_config(event):
             physical_light_config = None
 
         # Update the light map
-        print(f"Updating light map at {row}, {column}")
         modified_light_map = light_grid.light_map
-        print(modified_light_map)
         modified_light_map[row][column] = physical_light_config
         
         # Save the light map to the file
@@ -456,7 +448,7 @@ def change_light_config(event):
         state = "Online"
     state_label = tk.Label(light_config_window, text=f"This light is currently: {state}")
     state_label.pack()
-    
+
     light_enable_checkbox = tk.Checkbutton(light_config_window, text="Enable", command=checkbox_callback, variable=enable_var)
     light_enable_checkbox.pack()
 
@@ -473,7 +465,6 @@ def change_light_config(event):
     submit_button = tk.Button(light_config_window, text="Submit", command=submit_light_config, pady=5)
     submit_button.pack(pady=5)
 
-    print(light_grid.light_map[row][column])
     if light_grid.light_map[row][column] != None:
         light_enable_checkbox.select()
         base_topic_entry.insert(0, light_grid.light_map[row][column]["base_topic"])
@@ -585,7 +576,6 @@ def load_animation():
             frames = json.load(file)
         slider.config(to=len(frames)-1)  # Update the slider range
         slider.set(0)  # Set the slider value to the first frame
-        print(f"Animation loaded from {filename}")
 
 # Create a label for the Save/Load section
 save_load_label = tk.Label(management_frame, text="File Management", font=("Arial", 10))
