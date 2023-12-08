@@ -92,10 +92,11 @@ class LightGrid:
                             if rapid_mode:
                                 controller.enable_rapid_response_mode()
                             existing_controllers[base_topic] = controller
-                        self.create_physical_light(row_index, column_index, controller, pwm_id)
                     except Exception as e:
-                        messagebox.showerror("Controller Error", str(e))
+                        messagebox.showerror("Controller Error", f'The controller at {base_topic} is throwing an error: {e}')
                         sys.exit(1)
+
+                    self.create_physical_light(row_index, column_index, controller, pwm_id)
 
     def read_light_map_from_file(self, filename: str):
         try:
