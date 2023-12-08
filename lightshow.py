@@ -148,6 +148,8 @@ LIGHT_ON = 1
 COLOR_ON = "purple"
 COLOR_OFF = "white"
 COLOR_DISABLED = "gray"
+COLOR_OFF_OFFLINE = "brown4"
+COLOR_ON_OFFLINE = "red"
 
 ENABLE_PHYSICAL_SYNCRONIZATION = True
 
@@ -241,16 +243,45 @@ global playback_active
 global current_frame
 current_frame = 0
 playback_active: bool = False
+
+# -1 if light is disabled, 0 if light is offline, 1 if light is online
+def check_light_online(row: int, column: int):
+    if(light_grid.light_map[row][column] == None):
+        return -1
+    if(light_grid.get_light_state(row, column) == None):
+        return 0
+    return 1
+
+def set_tile_state(row: int, column: int, state: bool):
+    element = lightgrid_frame.grid_slaves(row=row, column=column)[0]
+    light_state = check_light_online(row, column)
+    if light_state == -1:
+        element.config(bg=COLOR_DISABLED)
+    elif light_state == 0:
+        if state:
+            element.config(bg=COLOR_ON_OFFLINE)
+        else:
+            element.config(bg=COLOR_OFF_OFFLINE)
+    else:
+        if state:
+            element.config(bg=COLOR_ON)
+        else:
+            element.config(bg=COLOR_OFF)
+
+def get_tile_state(row: int, column: int):
+    element = lightgrid_frame.grid_slaves(row=row, column=column)[0]
+    if element.cget("bg") == COLOR_ON or element.cget("bg") == COLOR_ON_OFFLINE:
+        return True
+    else:
+        return False
+
 def change_color(event):
     row = event.widget.grid_info()["row"]
     column = event.widget.grid_info()["column"]
-    if event.widget.cget("bg") != COLOR_DISABLED:
-        if event.widget.cget("bg") == COLOR_ON:
-            event.widget.config(bg=COLOR_OFF)  # Change the background color to white
-        else:
-            event.widget.config(bg=COLOR_ON)  # Change the background color to red
-        if(ENABLE_PHYSICAL_SYNCRONIZATION):
-            light_grid.set_light_state(row, column, color_to_state(event.widget.cget("bg")))
+    light_state = check_light_online(row, column)
+    set_tile_state(row, column, not get_tile_state(row, column))
+    if(ENABLE_PHYSICAL_SYNCRONIZATION and light_state != -1):
+        light_grid.set_light_state(row, column, color_to_state(event.widget.cget("bg")))
 
 def add_frame():
     frame = []
@@ -270,16 +301,16 @@ def add_frame():
     root.update()
 
 def record_frame():
+    print("recording frame")
     frame_index = slider.get()
     frame = []
     for i in range(rows):
         row = []
         for j in range(columns):
-            element = lightgrid_frame.grid_slaves(row=i, column=j)[0]
-            element_color = element.cget("bg")
-            element_state = color_to_state(element_color)
+            element_state = get_tile_state(i, j)
             row.append(element_state)
         frame.append(row)
+    print(frame)
     frames[frame_index] = frame
     render_frame_at_index(frame_index)
     # Update the slider position
@@ -366,12 +397,7 @@ def render_frame(frame: list):
     for i in range(rows):
         for j in range(columns):
             element = lightgrid_frame.grid_slaves(row=i, column=j)[0]
-            if light_grid.get_physical_light(i, j) == None:
-                element.config(bg=COLOR_DISABLED)
-            else:
-                element.config(bg=state_to_color(frame[i][j]))
-                if(ENABLE_PHYSICAL_SYNCRONIZATION):
-                    light_grid.set_light_state(i, j, frame[i][j])
+            set_tile_state(i, j, frame[i][j])
         
 def change_light_config(event):
     row = event.widget.grid_info()["row"]
