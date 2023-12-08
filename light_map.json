@@ -1,0 +1,74 @@
+[
+    [
+        {
+            "base_topic": "/espmega/1",
+            "pwm_id": 0
+        },
+        {
+            "base_topic": "/espmega/1",
+            "pwm_id": 1
+        },
+        {
+            "base_topic": "/espmega/1",
+            "pwm_id": 2
+        },
+        {
+            "base_topic": "/espmega/1",
+            "pwm_id": 3
+        }
+    ],
+    [
+        {
+            "base_topic": "/espmega/2",
+            "pwm_id": 0
+        },
+        {
+            "base_topic": "/espmega/2",
+            "pwm_id": 1
+        },
+        {
+            "base_topic": "/espmega/2",
+            "pwm_id": 2
+        },
+        {
+            "base_topic": "/espmega/2",
+            "pwm_id": 3
+        }
+    ],
+    [
+        {
+            "base_topic": "/espmega/3",
+            "pwm_id": 0
+        },
+        {
+            "base_topic": "/espmega/3",
+            "pwm_id": 1
+        },
+        {
+            "base_topic": "/espmega/3",
+            "pwm_id": 2
+        },
+        {
+            "base_topic": "/espmega/3",
+            "pwm_id": 3
+        }
+    ],
+    [
+        {
+            "base_topic": "/espmega/4",
+            "pwm_id": 0
+        },
+        {
+            "base_topic": "/espmega/4",
+            "pwm_id": 1
+        },
+        {
+            "base_topic": "/espmega/4",
+            "pwm_id": 2
+        },
+        {
+            "base_topic": "/espmega/4",
+            "pwm_id": 3
+        }
+    ]
+]

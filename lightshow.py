@@ -11,6 +11,8 @@ class PhysicalLightEntity:
 
 light_server ="192.168.0.26"
 light_server_port = 1883
+
+# Light map data structure example
 light_map = [[{"base_topic": "espmega/1","pwm_id":0},{"base_topic": "espmega/1","pwm_id":1},{"base_topic": "espmega/1","pwm_id":2}],
             [{"base_topic": "espmega/2","pwm_id":0},{"base_topic": "espmega/2","pwm_id":1},{"base_topic": "espmega/2","pwm_id":2}]]
 
@@ -39,6 +41,13 @@ class LightGrid:
         for row_index, row in enumerate(light_map):
             for column_index, light in enumerate(row):
                 self.create_physical_light(row_index, column_index, ESPMega_standalone(light["base_topic"], light_server, light_server_port), light["pwm_id"])
+
+# Load light map from light_map.json
+with open("light_map.json", "r") as file:
+    light_map = json.load(file)
+
+rows = len(light_map)
+columns = len(light_map[0])
 
 global playback_active
 playback_active: bool = False
@@ -109,9 +118,6 @@ def render_frame(frame):
             element.config(bg=frame[i][j])
 
 frames = []
-
-rows = 6
-columns = 6
 
 root = tk.Tk()
 
