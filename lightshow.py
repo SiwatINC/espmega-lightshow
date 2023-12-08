@@ -99,7 +99,7 @@ submit_button.pack(pady=5)
 
 def open_generate_light_map_template_window():
     light_map_generator_window = tk.Toplevel(root)
-    light_map_generator_window.title("Light Map Generator")
+    light_map_generator_window.title("Generate Map")
     light_map_generator_window.geometry("250x150")
     light_map_generator_window.resizable(False, False)
 
@@ -145,7 +145,7 @@ root.mainloop()
 LIGHT_DISABLED = -1
 LIGHT_OFF = 0
 LIGHT_ON = 1
-COLOR_ON = "red"
+COLOR_ON = "purple"
 COLOR_OFF = "white"
 COLOR_DISABLED = "gray"
 
