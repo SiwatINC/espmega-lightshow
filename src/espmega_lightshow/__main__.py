@@ -451,6 +451,7 @@ def play_frames_thread():
     global current_frame
     if not playback_active:
         return
+    playback_status_label.config(text="Status: Playing")
     while current_frame < len(frames):
         if not playback_active:
             break
@@ -460,6 +461,11 @@ def play_frames_thread():
         # Calculate the delay between frames based on speed
         delay = int(60000 / speed)
         root.update()
+        # If there are no frames left, stop the animation
+        if current_frame == len(frames)-1:
+            playback_active = False
+            playback_status_label.config(text="Status: Idle")
+            break
         # Delay between frames (in seconds)
         sleep(delay/1000)
         current_frame = slider.get()
@@ -471,6 +477,7 @@ def play_frames_thread():
         play_frames_thread()
     else:
         playback_active = False
+        playback_status_label.config(text="Status: Idle")
 
 def play_frames():
     global animation_id  # Declare animation_id as a global variable
@@ -501,7 +508,6 @@ def scrub_frames(value):
 
 
 def render_frame(frame: list):
-    print(frame)
     for i in range(rows):
         for j in range(columns):
             element = lightgrid_frame.grid_slaves(row=i, column=j)[0]
@@ -670,6 +676,10 @@ playback_frame.pack()
 playback_label = tk.Label(
     playback_frame, text="Playback Controls", font=("Arial", 10))
 playback_label.pack()
+
+# Create a label to show the current playback status
+playback_status_label = tk.Label(playback_frame, text="Status: Idle")
+playback_status_label.pack()
 
 # Create a button to play the recorded frames
 play_button = tk.Button(playback_frame, text="Play", command=play_frames)
