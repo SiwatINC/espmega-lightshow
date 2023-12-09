@@ -682,21 +682,26 @@ root.iconbitmap(icon_file)
 
 
 # Create a label for the title
-title_label = ttk.Label(root, text="ESPMega Light Show", font=("Arial", 24))
+title_label = ttk.Label(root, text="ESPMega Light Show", font=("Helvetica", 36, "bold"), foreground="#333333")
 title_label.pack()
 
 # Create another frame to the bottom
 buttom_frame = ttk.Frame(root)
 buttom_frame.pack(side="bottom", padx=10)  # Add padding to the right frame
 
+# Create a slider to scrub through recorded frames
+slider = tk.Scale(buttom_frame, label="Timeline", from_=0, to=len(
+    frames)-1, orient="horizontal", command=scrub_frames,length=root.winfo_width()*0.9)
+slider.pack()
+
 help_label = ttk.Label(
-    buttom_frame, text="Left click to toggle a light.\nRight click to configure a light.", font=("Arial", 12))
+    buttom_frame, text="Left click to toggle a light.\nRight click to configure a light.", font=("Arial", 12), justify="center")
 help_label.pack()
 
 if (design_mode):
     # Create a text label for the design mode
     design_mode_label = ttk.Label(
-        buttom_frame, text="You are currently in design mode.\nIn this mode, physical lights will not be controlled.", font=("Arial", 12))
+        buttom_frame, text="You are currently in design mode.\nIn this mode, physical lights will not be controlled.", font=("Arial", 12, "bold"), foreground="red", justify="center")
     design_mode_label.pack()
 
 # Create a text label for the author
@@ -757,14 +762,9 @@ record_frame_button = ttk.Button(
     playback_frame, text="Record Frame", command=record_frame)
 record_frame_button.pack()
 
-# Create a slider to scrub through recorded frames
-slider = tk.Scale(management_frame, label="Timeline", from_=0, to=len(
-    frames)-1, orient="horizontal", command=scrub_frames)
-slider.pack()
-
 # Create a repeat toggle
 repeat_var = tk.BooleanVar()
-repeat_toggle = tk.Checkbutton(
+repeat_toggle = ttk.Checkbutton(
     management_frame, text="Repeat", variable=repeat_var)
 repeat_toggle.pack()
 
@@ -792,7 +792,7 @@ def resize_elements(event):
         for j in range(columns):
             element = lightgrid_frame.grid_slaves(row=i, column=j)[0]
             element.config(width=width, height=height)
-
+    slider.config(length=root.winfo_width()*0.9)
 
 for i in range(rows):
     for j in range(columns):
