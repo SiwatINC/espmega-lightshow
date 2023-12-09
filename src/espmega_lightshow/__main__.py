@@ -993,7 +993,6 @@ def run_script():
                 "File Not Found", f"The file {filename} could not be found.")
         except Exception as e:
             messagebox.showerror("Load Error", f"{e}\nAre you sure this is a valid Python script?")
-    print(CustomUserScript)
     # At this point, the class "CustomUserScript" should be defined
     # Check if the class is defined
     if not "CustomUserScript" in locals():
@@ -1028,6 +1027,22 @@ def run_script():
     script_controls_window.geometry("250x130")
     script_controls_window.resizable(False, False)
     
+    # Add a label to display the script name
+    script_name_label = ttk.Label(script_controls_window, text=f"Script: {filename.split('/')[-1]}")
+    script_name_label.pack()
+
+    # Add a label to display the script status
+    script_status_label = ttk.Label(script_controls_window, text="Status: Running")
+    script_status_label.pack()
+
+    # Add a label to display the current frame number
+    script_frame_label = ttk.Label(script_controls_window, text="Frame: 0")
+    script_frame_label.pack()
+
+    # Add a label to display the current time
+    script_time_label = ttk.Label(script_controls_window, text="Time Elapsed: 0")
+    script_time_label.pack()
+
     def stop_script():
         script.active = False
 
@@ -1045,6 +1060,10 @@ def run_script():
             start_time = perf_counter()
             time_epoch = perf_counter() - begin_time
             script.__draw_frame__(time_epoch)
+            # Update the frame label
+            script_frame_label.config(text=f"Frame: {script.frame_count}")
+        # Update the time label
+        script_time_label.config(text=f"Time Elapsed: {perf_counter() - begin_time:.2f} seconds")
         root.update()
         root.update_idletasks()
     stop_wait_time = 15000
