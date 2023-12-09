@@ -42,7 +42,7 @@ except FileNotFoundError:
 # Create a tkinter gui window ask for the light server ip and port and whether to enable rapid response mode
 root = tk.Tk()
 root.title("ELS Pre-Flight")
-root.geometry("500x275")
+root.geometry("600x300")
 root.resizable(False, False)
 
 def submit_config():
@@ -94,9 +94,13 @@ light_server_port_label.pack()
 light_server_port_entry = tk.Entry(root)
 light_server_port_entry.pack()
 
+# Create a small label to explain rapid response mode
+rapid_response_label = tk.Label(root, text="Rapid response mode makes the lights respond faster by disabling the acknowledgement from the controller.\nThis is useful if multiple lights are being controlled at once and are on the same controller.")
+rapid_response_label.pack()
+
 # Create a checkbox to enable rapid response mode
 rapid_mode_var = tk.BooleanVar()
-rapid_mode_toggle = tk.Checkbutton(root, text="Enable Rapid Response Mode", variable=rapid_mode_var)
+rapid_mode_toggle = tk.Checkbutton(root, text="Rapid Response Mode", variable=rapid_mode_var)
 rapid_mode_toggle.pack()
 
 # Create a text label for the light map file chooser
