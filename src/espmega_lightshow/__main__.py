@@ -750,7 +750,7 @@ record_frame_button = tk.Button(
 record_frame_button.pack()
 
 # Create a slider to scrub through recorded frames
-slider = tk.Scale(management_frame, label="Frame Scrubber", from_=0, to=len(
+slider = tk.Scale(management_frame, label="Timeline", from_=0, to=len(
     frames)-1, orient="horizontal", command=scrub_frames)
 slider.pack()
 
@@ -815,7 +815,8 @@ def load_animation():
                 for frame in temp_frames:
                     for row in frame:
                         for light in row:
-                            if type(light) != bool:
+                            # Check if the light is a boolean value or an integer value of 0 or 1
+                            if type(light) != bool and type(light) != int or(type(light) == int and (light != 0 and light != 1)):
                                 raise Exception(
                                     "The animation must only contain boolean values.")
                 frames = temp_frames
