@@ -9,6 +9,8 @@ import sys
 from tkinter import messagebox
 import tkinter.messagebox as messagebox
 import os
+import threading
+from time import sleep
 
 @dataclass
 class PhysicalLightEntity:
@@ -335,7 +337,6 @@ def check_light_online(row: int, column: int):
 
 
 def set_tile_state(row: int, column: int, state: bool):
-    print(f"Setting tile {row}, {column} to {state}")
     element = lightgrid_frame.grid_slaves(row=row, column=column)[0]
     light_state = check_light_online(row, column)
     if light_state == -1:
@@ -443,12 +444,13 @@ def move_frame_right():
     root.update()
 
 
-def play_frames():
+
+def play_frames_thread():
     global animation_id  # Declare animation_id as a global variable
     global playback_active
     global current_frame
-    playback_active = True
-    current_frame = slider.get()
+    if not playback_active:
+        return
     while current_frame < len(frames):
         if not playback_active:
             break
@@ -458,17 +460,27 @@ def play_frames():
         # Calculate the delay between frames based on speed
         delay = int(60000 / speed)
         root.update()
-        # Delay between frames (in milliseconds)
-        animation_id = root.after(delay)
+        # Delay between frames (in seconds)
+        sleep(delay/1000)
         current_frame = slider.get()
         current_frame += 1
     repeat = repeat_var.get()  # Get the value of the repeat toggle
     if (repeat and playback_active):
         current_frame = 0
         slider.set(current_frame)
-        play_frames()
+        play_frames_thread()
+    else:
+        playback_active = False
 
-
+def play_frames():
+    global animation_id  # Declare animation_id as a global variable
+    global playback_active
+    global current_frame
+    if not playback_active:
+        playback_active = True
+        threading.Thread(target=play_frames_thread).start()
+    current_frame = slider.get()
+    
 
 def pause_frames():
     global playback_active
@@ -480,7 +492,6 @@ def stop_frames():
     playback_active = False
     slider.set(0)
     render_frame_at_index(0)
-    root.after_cancel(animation_id)
 
 
 def scrub_frames(value):
