@@ -823,7 +823,7 @@ def load_animation():
             messagebox.showerror(
                 "File Not Found", f"The file {filename} could not be found.")
         except Exception as e:
-            messagebox.showerror("Load Error", str(e))
+            messagebox.showerror("Load Error", f"{e}\nAre you sure this is a valid animation file?")
 
 
 # Create a label for the Save/Load section
