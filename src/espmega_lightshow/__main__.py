@@ -13,7 +13,7 @@ import os
 from time import sleep, perf_counter
 import time
 import statistics
-import importlib
+from importlib import util as importlib_util
 
 def restart():
     python = sys.executable
@@ -977,8 +977,8 @@ def new_animation():
 
 def run_script():
     def import_from_file(module_name, file_path):
-        spec = importlib.util.spec_from_file_location(module_name, file_path)
-        module = importlib.util.module_from_spec(spec)
+        spec = importlib_util.spec_from_file_location(module_name, file_path)
+        module = importlib_util.module_from_spec(spec)
         spec.loader.exec_module(module)
         return module
 
@@ -1045,6 +1045,15 @@ def run_script():
             start_time = perf_counter()
             time_epoch = perf_counter() - begin_time
             script.__draw_frame__(time_epoch)
+        root.update()
+        root.update_idletasks()
+    stop_wait_time = 15000
+    stop_time = perf_counter()
+    # script.execuiting is meant to be set by the script itself to indicate that it is still running (acts like semaphores)
+    while script.executing:
+        if perf_counter() - stop_time >= stop_wait_time:
+            messagebox.showerror("Script Error", "The script is taking too long to stop.\nProgram will now restart to prevent the program from freezing.")
+            restart()
         root.update()
         root.update_idletasks()
     playback_active = False
