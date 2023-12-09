@@ -13,6 +13,7 @@ import os
 from time import sleep, perf_counter
 import time
 import statistics
+import importlib
 
 def restart():
     python = sys.executable
@@ -967,6 +968,100 @@ def load_animation():
         except Exception as e:
             messagebox.showerror("Load Error", f"{e}\nAre you sure this is a valid animation file?")
 
+def new_animation():
+    global frames
+    frames = [[[0]*light_grid.columns]*light_grid.rows]
+    slider.config(to=len(frames)-1)  # Update the slider range
+    slider.set(0)  # Set the slider value to the first frame
+    render_frame_at_index(0)
+
+def run_script():
+    def import_from_file(module_name, file_path):
+        spec = importlib.util.spec_from_file_location(module_name, file_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    global playback_active
+    filename = filedialog.askopenfilename(filetypes=[("Python Files", "*.py")])
+    if filename:
+        try:
+            print(filename.split(".")[0])
+            CustomUserScript = import_from_file(filename.split(".")[0], filename).CustomUserScript
+        except FileNotFoundError:
+            messagebox.showerror(
+                "File Not Found", f"The file {filename} could not be found.")
+        except Exception as e:
+            messagebox.showerror("Load Error", f"{e}\nAre you sure this is a valid Python script?")
+    print(CustomUserScript)
+    # At this point, the class "CustomUserScript" should be defined
+    # Check if the class is defined
+    if not "CustomUserScript" in locals():
+        messagebox.showerror("Script Error", "The script must define a class called CustomUserScript.")
+        return
+
+    # Instantiate the class
+    script = CustomUserScript(rows, columns, set_tile_state, get_tile_state)
+
+    # Stop Playback if it is active
+    if playback_active:
+        playback_active = False
+    
+    # All controls except the speed scale and the BPM counter button
+    add_frame_button.config(state="disabled")
+    record_frame_button.config(state="disabled")
+    delete_frame_button.config(state="disabled")
+    move_frame_left_button.config(state="disabled")
+    move_frame_right_button.config(state="disabled")
+    button_previous_frame.config(state="disabled")
+    button_next_frame.config(state="disabled")
+    slider.config(state="disabled")
+    play_button.config(state="disabled")
+    pause_button.config(state="disabled")
+    stop_button.config(state="disabled")
+    repeat_toggle.config(state="disabled")
+    
+    # Create a new window to display the script controls
+    script_controls_window = tk.Toplevel(root)
+    script_controls_window.title("Script Runner")
+    script_controls_window.iconbitmap(icon_file)
+    script_controls_window.geometry("250x130")
+    script_controls_window.resizable(False, False)
+    
+    def stop_script():
+        script.active = False
+
+    # Add a stop button to stop the script
+    script_stop_button = ttk.Button(script_controls_window, text="Stop", command=stop_script)
+    script_stop_button.pack(pady=5)
+    start_time = perf_counter()
+    begin_time = perf_counter()
+    while True:
+        if not script.active:
+            break
+        # Calculate delay in seconds from bpm
+        delay = 60 / speed_scale.get()
+        if perf_counter() - start_time >= delay:
+            start_time = perf_counter()
+            time_epoch = perf_counter() - begin_time
+            script.__draw_frame__(time_epoch)
+        root.update()
+        root.update_idletasks()
+    playback_active = False
+    script_controls_window.destroy()
+    # Re-enable all controls
+    add_frame_button.config(state="normal")
+    record_frame_button.config(state="normal")
+    delete_frame_button.config(state="normal")
+    move_frame_left_button.config(state="normal")
+    move_frame_right_button.config(state="normal")
+    button_previous_frame.config(state="normal")
+    button_next_frame.config(state="normal")
+    slider.config(state="normal")
+    play_button.config(state="normal")
+    pause_button.config(state="normal")
+    stop_button.config(state="normal")
+    repeat_toggle.config(state="normal")
 render_frame_at_index(0)
 
 root.bind("<Configure>", resize_elements)
@@ -977,8 +1072,11 @@ root.config(menu=menu_bar)
 
 # Create the file menu
 file_menu = tk.Menu(menu_bar, tearoff=False)
+file_menu.add_command(label="New Animation", command=new_animation)
 file_menu.add_command(label="Save Animation", command=save_animation)
 file_menu.add_command(label="Load Animation", command=load_animation)
+file_menu.add_separator()
+file_menu.add_command(label="Run Script", command=run_script)
 file_menu.add_separator()
 file_menu.add_command(label="Exit", command=root.quit)
 menu_bar.add_cascade(label="File", menu=file_menu)
