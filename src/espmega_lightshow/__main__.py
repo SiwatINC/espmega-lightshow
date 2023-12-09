@@ -49,6 +49,7 @@ def submit_config():
     global light_server
     global light_server_port
     global rapid_mode
+    global design_mode
     light_server = light_server_entry.get()
     light_server_port = int(light_server_port_entry.get())
     rapid_mode = rapid_mode_var.get()
