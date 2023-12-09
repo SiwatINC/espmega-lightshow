@@ -518,6 +518,13 @@ def render_frame_at_index(frame_index: int):
     frame = frames[frame_index]
     render_frame(frame)
             
+def reconnect_light_controllers():
+    global light_grid
+    global design_mode
+    light_grid = LightGrid(design_mode=design_mode)
+    light_grid.read_light_map(light_grid.light_map)
+    render_frame_at_index(slider.get())
+    root.update()
 
 frames = [[[0]*light_grid.rows]*light_grid.columns]
 
@@ -599,6 +606,11 @@ repeat_toggle.pack()
 speed_scale = tk.Scale(management_frame, from_=1, to=10, orient="horizontal", label="Speed", resolution=0.1)
 speed_scale.set(5)  # Set the default speed to 5
 speed_scale.pack()
+
+# Create a button to reconnect the light controllers
+if not design_mode:
+    reconnect_button = tk.Button(management_frame, text="Reconnect", command=reconnect_light_controllers)
+    reconnect_button.pack()
 
 lightgrid_frame = tk.Frame(root)
 lightgrid_frame.pack()
