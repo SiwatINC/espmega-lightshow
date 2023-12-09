@@ -10,7 +10,6 @@ from tkinter import messagebox
 import tkinter.messagebox as messagebox
 import os
 
-
 @dataclass
 class PhysicalLightEntity:
     controller: ESPMega
@@ -25,6 +24,12 @@ global light_grid
 global design_mode
 
 light_map_file = ""  # Default light map file
+
+# Get Icon File Path
+icon_file = os.path.join(os.path.dirname(__file__), "icon.ico")
+
+# Get Logo File Path
+logo_file = os.path.join(os.path.dirname(__file__), "logo.png")
 
 # Load config.json if it exists
 try:
@@ -57,6 +62,7 @@ except KeyError:
 # Create a tkinter gui window ask for the light server ip and port and whether to enable rapid response mode
 root = tk.Tk()
 root.title("ELS Pre-Flight")
+root.iconbitmap(icon_file)
 root.geometry("600x350")
 root.resizable(False, False)
 
@@ -144,6 +150,8 @@ submit_button.pack(pady=5)
 def open_generate_light_map_template_window():
     light_map_generator_window = tk.Toplevel(root)
     light_map_generator_window.title("Generate Map")
+    light_map_generator_window.iconbitmap(icon_file)
+    light_map_generator_window.icon
     light_map_generator_window.geometry("250x150")
     light_map_generator_window.resizable(False, False)
 
@@ -491,6 +499,7 @@ def change_light_config(event):
     light_config_window = tk.Toplevel(root)
     light_config_window.geometry("250x190")
     light_config_window.title("Light Config")
+    light_config_window.iconbitmap(icon_file)
     light_config_window.resizable(False, False)
 
     # Define variables for the disable checkbox
@@ -612,6 +621,7 @@ frames = [[[0]*light_grid.rows]*light_grid.columns]
 root = tk.Tk()
 
 root.title("ESPMega Light Show")
+root.iconbitmap(icon_file)
 
 
 # Create a label for the title
