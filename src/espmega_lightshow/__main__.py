@@ -24,6 +24,8 @@ global rapid_mode
 global light_map_file
 global light_grid
 global design_mode
+global playback_semaphore
+playback_semaphore = threading.Semaphore()
 
 light_map_file = ""  # Default light map file
 
@@ -364,9 +366,11 @@ def get_tile_state(row: int, column: int):
 
 
 def change_color(event):
-    row = event.widget.grid_info()["row"]
-    column = event.widget.grid_info()["column"]
-    set_tile_state(row, column, not get_tile_state(row, column))
+    global playback_active
+    if not playback_active:
+        row = event.widget.grid_info()["row"]
+        column = event.widget.grid_info()["column"]
+        set_tile_state(row, column, not get_tile_state(row, column))
 
 
 def add_frame():
@@ -446,6 +450,7 @@ def move_frame_right():
 
 
 def play_frames_thread():
+    print("Playback thread started")
     global animation_id  # Declare animation_id as a global variable
     global playback_active
     global current_frame
@@ -455,14 +460,16 @@ def play_frames_thread():
     while current_frame < len(frames):
         if not playback_active:
             break
+        print("Calling render_frame_at_index")
         render_frame_at_index(current_frame)
+        print("Rendered frame")
         slider.set(current_frame)  # Update the slider position
         speed = speed_scale.get()  # Get the value of the speed scale
         # Calculate the delay between frames based on speed
         delay = int(60000 / speed)
         root.update()
-        # If there are no frames left, stop the animation
-        if current_frame == len(frames)-1:
+        # If there are no frames left and repeat is disaled, stop the animation
+        if current_frame == len(frames)-1 and not repeat_var.get():
             playback_active = False
             playback_status_label.config(text="Status: Idle")
             break
@@ -474,10 +481,12 @@ def play_frames_thread():
     if (repeat and playback_active):
         current_frame = 0
         slider.set(current_frame)
+        print("Calling play_frames_thread again")
         play_frames_thread()
     else:
         playback_active = False
         playback_status_label.config(text="Status: Idle")
+    print("Playback thread ended")
 
 def play_frames():
     global animation_id  # Declare animation_id as a global variable
@@ -508,10 +517,17 @@ def scrub_frames(value):
 
 
 def render_frame(frame: list):
-    for i in range(rows):
-        for j in range(columns):
-            element = lightgrid_frame.grid_slaves(row=i, column=j)[0]
-            set_tile_state(i, j, frame[i][j])
+    print("Acquiring playback semaphore")
+    if playback_semaphore.acquire(blocking=False):
+        print("Playback semaphore acquired")
+        for i in range(rows):
+            for j in range(columns):
+                element = lightgrid_frame.grid_slaves(row=i, column=j)[0]
+                set_tile_state(i, j, frame[i][j])
+        playback_semaphore.release()
+        print("Playback semaphore released")
+    else:
+        print("Failed to acquire playback semaphore")
 
 
 def change_light_config(event):
