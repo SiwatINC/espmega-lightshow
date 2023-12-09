@@ -658,8 +658,9 @@ def render_frame_at_index(frame_index: int):
 def reconnect_light_controllers():
     global light_grid
     global design_mode
+    old_light_map = light_grid.light_map
     light_grid = LightGrid(design_mode=design_mode)
-    light_grid.read_light_map(light_grid.light_map)
+    light_grid.read_light_map(old_light_map)
     render_frame_at_index(slider.get())
     root.update()
 
