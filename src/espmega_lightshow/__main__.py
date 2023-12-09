@@ -8,6 +8,7 @@ import json
 import sys
 from tkinter import messagebox
 import tkinter.messagebox as messagebox
+import os
 
 @dataclass
 class PhysicalLightEntity:
@@ -38,6 +39,17 @@ except FileNotFoundError:
     rapid_mode = False
     light_map_file = ""
     design_mode = False
+except KeyError:
+    # Delete the config file if it is corrupted
+    os.remove("config.json")
+    light_server = ""
+    light_server_port = 1883
+    rapid_mode = False
+    light_map_file = ""
+    design_mode = False
+    # Inform the user that the config file is corrupted and that it has been deleted
+    messagebox.showerror("Error", "The config file is corrupted and has been deleted. Please reconfigure the program.")
+
 
 # Create a tkinter gui window ask for the light server ip and port and whether to enable rapid response mode
 root = tk.Tk()
