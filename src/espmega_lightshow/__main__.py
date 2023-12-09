@@ -473,6 +473,7 @@ def play_frames():
     current_frame = slider.get()
     # If the current frame is the last frame and repeat is disabled, don't play
     if current_frame == len(frames)-1 and not repeat_var.get():
+        playback_active = False
         return
     playback_status_label.config(text="Status: Playing")
     while current_frame < len(frames):
