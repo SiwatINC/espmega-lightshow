@@ -10,7 +10,7 @@ from tkinter import messagebox
 import tkinter.messagebox as messagebox
 import os
 import threading
-from time import sleep
+from time import sleep, perf_counter, sleep
 
 @dataclass
 class PhysicalLightEntity:
@@ -25,6 +25,12 @@ global light_map_file
 global light_grid
 global design_mode
 global playback_semaphore
+
+debug_mode = True
+
+if not debug_mode:
+    print = lambda *args, **kwargs: None
+
 playback_semaphore = threading.Semaphore()
 
 light_map_file = ""  # Default light map file
@@ -463,20 +469,34 @@ def play_frames_thread():
         print("Calling render_frame_at_index")
         render_frame_at_index(current_frame)
         print("Rendered frame")
+        print("Setting slider")
         slider.set(current_frame)  # Update the slider position
+        print("Set slider")
         speed = speed_scale.get()  # Get the value of the speed scale
+        print("Got speed")
         # Calculate the delay between frames based on speed
         delay = int(60000 / speed)
         root.update()
+        print("Updated root")
         # If there are no frames left and repeat is disaled, stop the animation
         if current_frame == len(frames)-1 and not repeat_var.get():
             playback_active = False
             playback_status_label.config(text="Status: Idle")
             break
+        print("Sleeping")
         # Delay between frames (in seconds)
-        sleep(delay/1000)
+        start_time = perf_counter()
+        while perf_counter() - start_time < delay/1000:
+            if not playback_active:
+                break
+            sleep(0.05)
+        if not playback_active:
+            break
+        print("Slept")
+        print("Incrementing current_frame")
         current_frame = slider.get()
         current_frame += 1
+        print("Incremented current_frame")
     repeat = repeat_var.get()  # Get the value of the repeat toggle
     if (repeat and playback_active):
         current_frame = 0
