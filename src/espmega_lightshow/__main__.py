@@ -662,6 +662,19 @@ def render_frame_at_index(frame_index: int):
     frame = frames[frame_index]
     render_frame(frame)
 
+def frame_forward():
+    frame_index = slider.get()
+    if frame_index < len(frames)-1:
+        slider.set(frame_index+1)
+        render_frame_at_index(frame_index+1)
+    root.update()
+
+def frame_backward():
+    frame_index = slider.get()
+    if frame_index > 0:
+        slider.set(frame_index-1)
+        render_frame_at_index(frame_index-1)
+    root.update()
 
 def reconnect_light_controllers():
     global light_grid
@@ -688,6 +701,77 @@ title_label.pack()
 # Create another frame to the bottom
 buttom_frame = ttk.Frame(root)
 buttom_frame.pack(side="bottom", padx=10)  # Add padding to the right frame
+
+# Create a grid to hold the playback controls
+playback_grid = ttk.Frame(buttom_frame)
+playback_grid.pack()
+
+playback_status_frame = ttk.Frame(playback_grid)
+
+# Create a text label for the playback controls
+playback_label = ttk.Label(
+    playback_status_frame, text="Playback Controls", font=("Arial", 10))
+playback_label.pack()
+
+# Create a text label to show the current playback status
+playback_status_label = ttk.Label(playback_status_frame, text="Status: Stopped")
+playback_status_label.pack()
+
+playback_status_frame.pack(side="left")
+
+# Create a separator to seperate the playback controls from the playback status
+separator = ttk.Separator(playback_grid, orient="vertical")
+separator.pack(side="left", padx=10, fill="y")
+
+# Create a frame to hold the button section of the playback controls
+playback_section = ttk.Frame(playback_grid)
+playback_section.pack(side="left")
+
+# Create a frame to hold the playback controls
+playback_button_frame = ttk.Frame(playback_section)
+playback_button_frame.pack()
+
+# Create a button to play the recorded frames
+play_button = ttk.Button(playback_button_frame, text="Play", command=play_frames)
+play_button.pack(side="left")
+
+# Create a button to pause the animation
+pause_button = ttk.Button(playback_button_frame, text="Pause", command=pause_frames)
+pause_button.pack(side="left")
+
+# Create a button to stop the animation
+stop_button = ttk.Button(playback_button_frame, text="Stop", command=stop_frames)
+stop_button.pack(side="left")
+
+# Create a frame to hold the repeat toggle and the scrubing controls
+manipulation_frame = ttk.Frame(playback_section)
+manipulation_frame.pack()
+
+# Create a button that goes to the previous frame
+button_previous_frame = ttk.Button(
+    manipulation_frame, text="Previous Frame", command=frame_backward)
+button_previous_frame.pack(side="left")
+
+# Create a repeat toggle
+repeat_var = tk.BooleanVar()
+repeat_toggle = ttk.Checkbutton(
+    manipulation_frame, text="Repeat", variable=repeat_var)
+repeat_toggle.pack(side="left")
+
+# Create a button that goes to the next frame
+button_next_frame = ttk.Button(
+    manipulation_frame, text="Next Frame", command=frame_forward)
+button_next_frame.pack(side="right")
+
+# Add a separator to seperate the playback controls from bpm controls
+separator = ttk.Separator(playback_grid, orient="vertical")
+separator.pack(side="left", padx=10, fill="y")
+
+# Create a scale to adjust playback speed
+speed_scale = tk.Scale(playback_grid, from_=40, to=200,
+                       orient="horizontal", label="BPM", resolution=0.1)
+speed_scale.set(120)
+speed_scale.pack()
 
 # Create a slider to scrub through recorded frames
 slider = tk.Scale(buttom_frame, label="Timeline", from_=0, to=len(
@@ -716,27 +800,6 @@ management_frame.pack(side="right", padx=10)  # Add padding to the right frame
 playback_frame = ttk.Frame(management_frame)
 playback_frame.pack()
 
-# Create a text label for the playback controls
-playback_label = ttk.Label(
-    playback_frame, text="Playback Controls", font=("Arial", 10))
-playback_label.pack()
-
-# Create a text label to show the current playback status
-playback_status_label = ttk.Label(playback_frame, text="Status: Stopped")
-playback_status_label.pack()
-
-# Create a button to play the recorded frames
-play_button = ttk.Button(playback_frame, text="Play", command=play_frames)
-play_button.pack()
-
-# Create a button to pause the animation
-pause_button = ttk.Button(playback_frame, text="Pause", command=pause_frames)
-pause_button.pack()
-
-# Create a button to stop the animation
-stop_button = ttk.Button(playback_frame, text="Stop", command=stop_frames)
-stop_button.pack()
-
 # Create a button to delete the current frame
 delete_frame_button = ttk.Button(
     playback_frame, text="Delete Frame", command=delete_frame)
@@ -752,7 +815,7 @@ move_frame_right_button = ttk.Button(
     playback_frame, text="Move Frame Right", command=move_frame_right)
 move_frame_right_button.pack()
 
-# Create a button to record a frame
+# Create a button to add a frame to the end of the animation
 add_frame_button = ttk.Button(
     playback_frame, text="Add Frame", command=add_frame)
 add_frame_button.pack()
@@ -761,18 +824,6 @@ add_frame_button.pack()
 record_frame_button = ttk.Button(
     playback_frame, text="Record Frame", command=record_frame)
 record_frame_button.pack()
-
-# Create a repeat toggle
-repeat_var = tk.BooleanVar()
-repeat_toggle = ttk.Checkbutton(
-    management_frame, text="Repeat", variable=repeat_var)
-repeat_toggle.pack()
-
-# Create a scale to adjust playback speed
-speed_scale = tk.Scale(management_frame, from_=40, to=200,
-                       orient="horizontal", label="BPM", resolution=0.1)
-speed_scale.set(5)  # Set the default speed to 5
-speed_scale.pack()
 
 # Create a button to reconnect the light controllers
 if not design_mode:
@@ -793,6 +844,7 @@ def resize_elements(event):
             element = lightgrid_frame.grid_slaves(row=i, column=j)[0]
             element.config(width=width, height=height)
     slider.config(length=root.winfo_width()*0.9)
+    speed_scale.config(length=root.winfo_width()*0.5)
 
 for i in range(rows):
     for j in range(columns):
