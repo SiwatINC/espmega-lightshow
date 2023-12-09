@@ -800,30 +800,52 @@ management_frame.pack(side="right", padx=10)  # Add padding to the right frame
 playback_frame = ttk.Frame(management_frame)
 playback_frame.pack()
 
-# Create a button to delete the current frame
-delete_frame_button = ttk.Button(
-    playback_frame, text="Delete Frame", command=delete_frame)
-delete_frame_button.pack()
+# Create a text label for the record controls
+record_label = ttk.Label(playback_frame, text="Record Controls", font=("Arial", 10))
+record_label.pack()
 
-# Create a button to move the current frame left
-move_frame_left_button = ttk.Button(
-    playback_frame, text="Move Frame Left", command=move_frame_left)
-move_frame_left_button.pack()
-
-# Create a button to move the current frame right
-move_frame_right_button = ttk.Button(
-    playback_frame, text="Move Frame Right", command=move_frame_right)
-move_frame_right_button.pack()
-
-# Create a button to add a frame to the end of the animation
-add_frame_button = ttk.Button(
-    playback_frame, text="Add Frame", command=add_frame)
-add_frame_button.pack()
+# Create a separator to seperate the record controls from the label
+separator = ttk.Separator(playback_frame, orient="horizontal")
+separator.pack(fill="x")
 
 # Create a button to record a frame to the current frame
-record_frame_button = ttk.Button(
-    playback_frame, text="Record Frame", command=record_frame)
-record_frame_button.pack()
+record_frame_button = tk.Button(
+    playback_frame, text="Record Frame", command=record_frame, height=5, width=15, bg="red", fg="white")
+record_frame_button.pack(pady=5)
+
+# Create a button to add a frame to the end of the animation
+add_frame_button = tk.Button(
+    playback_frame, text="Add Frame", command=add_frame, height=5, width=15, bg="green", fg="white")
+add_frame_button.pack(pady=5)
+
+# Create a button to delete the current frame
+delete_frame_button = tk.Button(
+    playback_frame, text="Delete Frame", command=delete_frame, height=5, width=15, bg="firebrick4", fg="white")
+delete_frame_button.pack(pady=5)
+
+# Create a separator to seperate the record controls from the label
+separator = ttk.Separator(playback_frame, orient="horizontal")
+separator.pack(fill="x")
+
+# Create a text label for the frame manipulation controls
+frame_manipulation_label = ttk.Label(playback_frame, text="Move Current Frame", font=("Arial", 10))
+frame_manipulation_label.pack()
+
+# Create a frame to hold the frame manipulation buttons (move frame left and move frame right)
+frame_manipulation_frame = ttk.Frame(playback_frame)
+frame_manipulation_frame.pack()
+
+# Create a button to move the current frame left
+move_frame_left_button = tk.Button(
+    frame_manipulation_frame, text="Left", command=move_frame_left, height=2, width=8, bg="orange", fg="white")
+move_frame_left_button.grid(row=1, column=0, pady=5)
+
+# Create a button to move the current frame right
+move_frame_right_button = tk.Button(
+    frame_manipulation_frame, text="Right", command=move_frame_right, height=2, width=8, bg="orange", fg="white")
+move_frame_right_button.grid(row=1, column=1, pady=5)
+
+
 
 lightgrid_frame = ttk.Frame(root)
 lightgrid_frame.pack()
