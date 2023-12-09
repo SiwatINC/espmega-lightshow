@@ -399,6 +399,9 @@ def record_frame():
 
 
 def delete_frame():
+    # Don't delete the last frame
+    if len(frames) == 1:
+        return
     frame_index = slider.get()
     frames.pop(frame_index)
     slider.config(to=len(frames)-1)  # Update the slider range
@@ -706,7 +709,7 @@ repeat_toggle = tk.Checkbutton(
 repeat_toggle.pack()
 
 # Create a scale to adjust playback speed
-speed_scale = tk.Scale(management_frame, from_=1, to=60,
+speed_scale = tk.Scale(management_frame, from_=40, to=200,
                        orient="horizontal", label="BPM", resolution=0.1)
 speed_scale.set(5)  # Set the default speed to 5
 speed_scale.pack()
