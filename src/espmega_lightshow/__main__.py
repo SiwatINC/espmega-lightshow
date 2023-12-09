@@ -151,7 +151,6 @@ def open_generate_light_map_template_window():
     light_map_generator_window = tk.Toplevel(root)
     light_map_generator_window.title("Generate Map")
     light_map_generator_window.iconbitmap(icon_file)
-    light_map_generator_window.icon
     light_map_generator_window.geometry("250x150")
     light_map_generator_window.resizable(False, False)
 
@@ -336,6 +335,7 @@ def check_light_online(row: int, column: int):
 
 
 def set_tile_state(row: int, column: int, state: bool):
+    print(f"Setting tile {row}, {column} to {state}")
     element = lightgrid_frame.grid_slaves(row=row, column=column)[0]
     light_state = check_light_online(row, column)
     if light_state == -1:
@@ -453,7 +453,7 @@ def play_frames():
         slider.set(current_frame)  # Update the slider position
         speed = speed_scale.get()  # Get the value of the speed scale
         # Calculate the delay between frames based on speed
-        delay = int(3000 / speed)
+        delay = int(60000 / speed)
         root.update()
         # Delay between frames (in milliseconds)
         animation_id = root.after(delay)
@@ -464,6 +464,7 @@ def play_frames():
         current_frame = 0
         slider.set(current_frame)
         play_frames()
+
 
 
 def pause_frames():
@@ -486,6 +487,7 @@ def scrub_frames(value):
 
 
 def render_frame(frame: list):
+    print(frame)
     for i in range(rows):
         for j in range(columns):
             element = lightgrid_frame.grid_slaves(row=i, column=j)[0]
@@ -616,7 +618,7 @@ def reconnect_light_controllers():
     root.update()
 
 
-frames = [[[0]*light_grid.rows]*light_grid.columns]
+frames = [[[0]*light_grid.columns]*light_grid.rows]
 
 root = tk.Tk()
 
@@ -704,8 +706,8 @@ repeat_toggle = tk.Checkbutton(
 repeat_toggle.pack()
 
 # Create a scale to adjust playback speed
-speed_scale = tk.Scale(management_frame, from_=1, to=10,
-                       orient="horizontal", label="Speed", resolution=0.1)
+speed_scale = tk.Scale(management_frame, from_=1, to=60,
+                       orient="horizontal", label="BPM", resolution=0.1)
 speed_scale.set(5)  # Set the default speed to 5
 speed_scale.pack()
 

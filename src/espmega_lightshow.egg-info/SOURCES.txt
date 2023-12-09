@@ -2,6 +2,8 @@ README.md
 setup.py
 src/espmega_lightshow/__init__.py
 src/espmega_lightshow/__main__.py
+src/espmega_lightshow/icon.ico
+src/espmega_lightshow/logo.png
 src/espmega_lightshow.egg-info/PKG-INFO
 src/espmega_lightshow.egg-info/SOURCES.txt
 src/espmega_lightshow.egg-info/dependency_links.txt

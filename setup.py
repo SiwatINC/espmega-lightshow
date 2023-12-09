@@ -6,7 +6,7 @@ def readme():
 
 setup(
     name='espmega_lightshow',
-    version='1.2',
+    version='1.5',
     license='Apache 2.0',
     author="Siwat Sirichai",
     author_email='siwat@siwatinc.com',
@@ -14,6 +14,9 @@ setup(
     long_description_content_type="text/markdown",
     packages=find_packages('src'),
     package_dir={'': 'src'},
+    package_data={
+        '': ['*.png', '*.ico'],
+    },
     include_package_data=True,
     url='https://github.com/SiwatINC/espmega-lightshow',
     keywords='light mqtt espmega',
