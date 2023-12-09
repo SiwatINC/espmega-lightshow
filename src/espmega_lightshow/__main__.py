@@ -10,10 +10,12 @@ from tkinter import messagebox
 import tkinter.messagebox as messagebox
 import os
 
+
 @dataclass
 class PhysicalLightEntity:
     controller: ESPMega
     pwm_channel: int
+
 
 global light_server
 global light_server_port
@@ -48,7 +50,8 @@ except KeyError:
     light_map_file = ""
     design_mode = False
     # Inform the user that the config file is corrupted and that it has been deleted
-    messagebox.showerror("Error", "The config file is corrupted and has been deleted. Please reconfigure the program.")
+    messagebox.showerror(
+        "Error", "The config file is corrupted and has been deleted. Please reconfigure the program.")
 
 
 # Create a tkinter gui window ask for the light server ip and port and whether to enable rapid response mode
@@ -56,6 +59,7 @@ root = tk.Tk()
 root.title("ELS Pre-Flight")
 root.geometry("600x300")
 root.resizable(False, False)
+
 
 def submit_config():
     global light_server
@@ -77,21 +81,27 @@ def submit_config():
         return
     # Save the config to config.json
     with open("config.json", "w") as file:
-        json.dump({"light_server": light_server, "light_server_port": light_server_port, "rapid_mode": rapid_mode, "light_map_file": light_map_file,"design_mode": design_mode}, file)
+        json.dump({"light_server": light_server, "light_server_port": light_server_port,
+                  "rapid_mode": rapid_mode, "light_map_file": light_map_file, "design_mode": design_mode}, file)
     root.destroy()
+
 
 def open_light_map_file_chooser_dialog():
     global light_map_file
-    light_map_file = filedialog.askopenfilename(filetypes=[("JSON Files", "*.json")])
+    light_map_file = filedialog.askopenfilename(
+        filetypes=[("JSON Files", "*.json")])
     light_map_button.config(text=light_map_file)
 
+
 # Create a small label to explain design mode
-design_mode_label = tk.Label(root, text="Design mode allows you to play with the lights without connecting to a controller.\nThis is useful for testing lighting designs.")
+design_mode_label = tk.Label(
+    root, text="Design mode allows you to play with the lights without connecting to a controller.\nThis is useful for testing lighting designs.")
 design_mode_label.pack()
 
 # Create a design mode toggle
 design_mode_var = tk.BooleanVar()
-design_mode_toggle = tk.Checkbutton(root, text="Design Mode", variable=design_mode_var)
+design_mode_toggle = tk.Checkbutton(
+    root, text="Design Mode", variable=design_mode_var)
 design_mode_toggle.pack()
 
 # Create a field to enter the light server ip
@@ -107,12 +117,14 @@ light_server_port_entry = tk.Entry(root)
 light_server_port_entry.pack()
 
 # Create a small label to explain rapid response mode
-rapid_response_label = tk.Label(root, text="Rapid response mode makes the lights respond faster by disabling the acknowledgement from the controller.\nThis is useful if multiple lights are being controlled at once and are on the same controller.")
+rapid_response_label = tk.Label(
+    root, text="Rapid response mode makes the lights respond faster by disabling the acknowledgement from the controller.\nThis is useful if multiple lights are being controlled at once and are on the same controller.")
 rapid_response_label.pack()
 
 # Create a checkbox to enable rapid response mode
 rapid_mode_var = tk.BooleanVar()
-rapid_mode_toggle = tk.Checkbutton(root, text="Rapid Response Mode", variable=rapid_mode_var)
+rapid_mode_toggle = tk.Checkbutton(
+    root, text="Rapid Response Mode", variable=rapid_mode_var)
 rapid_mode_toggle.pack()
 
 # Create a text label for the light map file chooser
@@ -120,12 +132,14 @@ light_map_label = tk.Label(root, text="Light Map File")
 light_map_label.pack()
 
 # Create a button to open a file dialog asking to select the light map file
-light_map_button = tk.Button(root, text="Browse..."if light_map_file=="" else light_map_file, command=open_light_map_file_chooser_dialog)
+light_map_button = tk.Button(root, text="Browse..."if light_map_file ==
+                             "" else light_map_file, command=open_light_map_file_chooser_dialog)
 light_map_button.pack(pady=5)
 
 # Create a button to submit the configuration and close the window
 submit_button = tk.Button(root, text="Submit", command=submit_config, pady=5)
 submit_button.pack(pady=5)
+
 
 def open_generate_light_map_template_window():
     light_map_generator_window = tk.Toplevel(root)
@@ -134,13 +148,15 @@ def open_generate_light_map_template_window():
     light_map_generator_window.resizable(False, False)
 
     # Create a field to enter the number of rows
-    light_map_rows_label = tk.Label(light_map_generator_window, text="Number of Rows")
+    light_map_rows_label = tk.Label(
+        light_map_generator_window, text="Number of Rows")
     light_map_rows_label.pack()
     light_map_rows_entry = tk.Entry(light_map_generator_window)
     light_map_rows_entry.pack()
 
     # Create a field to enter the number of columns
-    light_map_columns_label = tk.Label(light_map_generator_window, text="Number of Columns")
+    light_map_columns_label = tk.Label(
+        light_map_generator_window, text="Number of Columns")
     light_map_columns_label.pack()
     light_map_columns_entry = tk.Entry(light_map_generator_window)
     light_map_columns_entry.pack()
@@ -150,17 +166,21 @@ def open_generate_light_map_template_window():
         columns = int(light_map_columns_entry.get())
         light_map = [[None]*columns]*rows
         # Ask the user where to save the light map template
-        filename = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON Files", "*.json")])
+        filename = filedialog.asksaveasfilename(
+            defaultextension=".json", filetypes=[("JSON Files", "*.json")])
         with open(filename, "w") as file:
             json.dump(light_map, file)
         light_map_generator_window.destroy()
 
     # Create a button to submit the configuration and close the window
-    submit_button = tk.Button(light_map_generator_window, text="Submit", command=submit_light_map_template, pady=5)
+    submit_button = tk.Button(light_map_generator_window,
+                              text="Submit", command=submit_light_map_template, pady=5)
     submit_button.pack(pady=5)
 
+
 # Create a button to generate a template light map file with the specified dimensions with all lights disabled
-light_map_generate_button = tk.Button(root, text="Generate Light Map Template", command=open_generate_light_map_template_window)
+light_map_generate_button = tk.Button(
+    root, text="Generate Light Map Template", command=open_generate_light_map_template_window)
 light_map_generate_button.pack(pady=5)
 
 # Fill in the default values
@@ -186,6 +206,7 @@ COLOR_ON_OFFLINE = "red"
 
 ENABLE_PHYSICAL_SYNCRONIZATION = True
 
+
 def state_to_color(state: int):
     if state == LIGHT_ON:
         return COLOR_ON
@@ -193,6 +214,7 @@ def state_to_color(state: int):
         return COLOR_OFF
     else:
         return COLOR_DISABLED
+
 
 def color_to_state(color: str):
     if color == COLOR_ON:
@@ -202,6 +224,7 @@ def color_to_state(color: str):
     else:
         return LIGHT_DISABLED
 
+
 class LightGrid:
     def __init__(self, rows: int = 0, columns: int = 0, design_mode: bool = False):
         self.rows = rows
@@ -209,16 +232,23 @@ class LightGrid:
         self.lights: list = [None] * rows * columns
         self.controllers = {}
         self.design_mode = design_mode
+
     def assign_physical_light(self, row: int, column: int, physical_light: PhysicalLightEntity):
         self.lights[row * self.columns + column] = physical_light
+
     def get_physical_light(self, row, column):
         return self.lights[row * self.columns + column]
+
     def set_light_state(self, row: int, column: int, state: bool):
         physical_light = self.get_physical_light(row, column)
         if physical_light and not self.design_mode:
-            physical_light.controller.digital_write(physical_light.pwm_channel, state)
+            physical_light.controller.digital_write(
+                physical_light.pwm_channel, state)
+
     def create_physical_light(self, row: int, column: int, controller: ESPMega, pwm_channel: int):
-        self.assign_physical_light(row, column, PhysicalLightEntity(controller, pwm_channel))
+        self.assign_physical_light(
+            row, column, PhysicalLightEntity(controller, pwm_channel))
+
     def get_light_state(self, row: int, column: int):
         physical_light = self.get_physical_light(row, column)
         if physical_light:
@@ -246,18 +276,21 @@ class LightGrid:
                             controller = self.controllers[base_topic]
                         else:
                             if not self.design_mode:
-                                controller = ESPMega_standalone(base_topic, light_server, light_server_port)
+                                controller = ESPMega_standalone(
+                                    base_topic, light_server, light_server_port)
+                                if rapid_mode:
+                                    controller.enable_rapid_response_mode()
                             else:
                                 controller = None
-                            if rapid_mode:
-                                controller.enable_rapid_response_mode()
                             self.controllers[base_topic] = controller
-                        self.create_physical_light(row_index, column_index, controller, pwm_id)
+                        self.create_physical_light(
+                            row_index, column_index, controller, pwm_id)
                         self.set_light_state(row_index, column_index, False)
                     except Exception as e:
-                        messagebox.showerror("Controller Error", f'The controller at {base_topic} is throwing an error:\n{e}\n\nPlease note that the controller must be connected to the network and running the ESPMega firmware.\n\nYou may continue without this light, but it will not be able to be controlled.')
-                        self.assign_physical_light(row_index, column_index, None)
-                    
+                        messagebox.showerror(
+                            "Controller Error", f'The controller at {base_topic} is throwing an error:\n{e}\n\nPlease note that the controller must be connected to the network and running the ESPMega firmware.\n\nYou may continue without this light, but it will not be able to be controlled.')
+                        self.assign_physical_light(
+                            row_index, column_index, None)
 
     def read_light_map_from_file(self, filename: str):
         try:
@@ -265,10 +298,12 @@ class LightGrid:
                 light_map = json.load(file)
             self.read_light_map(light_map)
         except FileNotFoundError:
-            messagebox.showerror("File Not Found", f"The file {filename} could not be found.")
+            messagebox.showerror(
+                "File Not Found", f"The file {filename} could not be found.")
         except Exception as e:
             messagebox.showerror("Error", str(e))
             sys.exit(1)
+
 
 # Load light map from light_map.json
 light_grid = LightGrid(design_mode=design_mode)
@@ -282,12 +317,15 @@ current_frame = 0
 playback_active: bool = False
 
 # -1 if light is disabled, 0 if light is offline, 1 if light is online
+
+
 def check_light_online(row: int, column: int):
-    if(light_grid.light_map[row][column] == None):
+    if (light_grid.light_map[row][column] == None):
         return -1
-    if(light_grid.get_physical_light(row, column) == None):
+    if (light_grid.get_physical_light(row, column) == None):
         return 0
     return 1
+
 
 def set_tile_state(row: int, column: int, state: bool):
     element = lightgrid_frame.grid_slaves(row=row, column=column)[0]
@@ -304,8 +342,9 @@ def set_tile_state(row: int, column: int, state: bool):
             element.config(bg=COLOR_ON)
         else:
             element.config(bg=COLOR_OFF)
-    if(ENABLE_PHYSICAL_SYNCRONIZATION and light_state != -1):
+    if (ENABLE_PHYSICAL_SYNCRONIZATION and light_state != -1):
         light_grid.set_light_state(row, column, state)
+
 
 def get_tile_state(row: int, column: int):
     element = lightgrid_frame.grid_slaves(row=row, column=column)[0]
@@ -314,10 +353,12 @@ def get_tile_state(row: int, column: int):
     else:
         return False
 
+
 def change_color(event):
     row = event.widget.grid_info()["row"]
     column = event.widget.grid_info()["column"]
     set_tile_state(row, column, not get_tile_state(row, column))
+
 
 def add_frame():
     frame = []
@@ -333,6 +374,7 @@ def add_frame():
     # Update the slider position
     root.update()
 
+
 def record_frame():
     frame_index = slider.get()
     frame = []
@@ -347,6 +389,7 @@ def record_frame():
     # Update the slider position
     root.update()
 
+
 def delete_frame():
     frame_index = slider.get()
     frames.pop(frame_index)
@@ -360,27 +403,34 @@ def delete_frame():
     # Update the slider position
     root.update()
 
+
 def save_animation():
-    filename = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON Files", "*.json")])
+    filename = filedialog.asksaveasfilename(
+        defaultextension=".json", filetypes=[("JSON Files", "*.json")])
     if filename:
         with open(filename, "w") as file:
             json.dump(frames, file)
 
+
 def move_frame_left():
     frame_index = slider.get()
     if frame_index > 0:
-        frames[frame_index], frames[frame_index-1] = frames[frame_index-1], frames[frame_index]
+        frames[frame_index], frames[frame_index -
+                                    1] = frames[frame_index-1], frames[frame_index]
         slider.set(frame_index-1)
         render_frame_at_index(frame_index-1)
     root.update()
 
+
 def move_frame_right():
     frame_index = slider.get()
     if frame_index < len(frames)-1:
-        frames[frame_index], frames[frame_index+1] = frames[frame_index+1], frames[frame_index]
+        frames[frame_index], frames[frame_index +
+                                    1] = frames[frame_index+1], frames[frame_index]
         slider.set(frame_index+1)
         render_frame_at_index(frame_index+1)
     root.update()
+
 
 def play_frames():
     global animation_id  # Declare animation_id as a global variable
@@ -394,20 +444,24 @@ def play_frames():
         render_frame_at_index(current_frame)
         slider.set(current_frame)  # Update the slider position
         speed = speed_scale.get()  # Get the value of the speed scale
-        delay = int(3000 / speed)  # Calculate the delay between frames based on speed
+        # Calculate the delay between frames based on speed
+        delay = int(3000 / speed)
         root.update()
-        animation_id = root.after(delay)  # Delay between frames (in milliseconds)
+        # Delay between frames (in milliseconds)
+        animation_id = root.after(delay)
         current_frame = slider.get()
         current_frame += 1
     repeat = repeat_var.get()  # Get the value of the repeat toggle
-    if(repeat and playback_active):
+    if (repeat and playback_active):
         current_frame = 0
         slider.set(current_frame)
         play_frames()
 
+
 def pause_frames():
     global playback_active
     playback_active = False
+
 
 def stop_frames():
     global playback_active
@@ -416,17 +470,20 @@ def stop_frames():
     render_frame_at_index(0)
     root.after_cancel(animation_id)
 
+
 def scrub_frames(value):
     frame_index = int(value)
     render_frame_at_index(frame_index)
     root.update()
+
 
 def render_frame(frame: list):
     for i in range(rows):
         for j in range(columns):
             element = lightgrid_frame.grid_slaves(row=i, column=j)[0]
             set_tile_state(i, j, frame[i][j])
-        
+
+
 def change_light_config(event):
     row = event.widget.grid_info()["row"]
     column = event.widget.grid_info()["column"]
@@ -455,14 +512,15 @@ def change_light_config(event):
             except ValueError:
                 messagebox.showerror("Error", "The PWM ID must be an integer.")
                 return
-            physical_light_config = {"base_topic": base_topic, "pwm_id": pwm_id}
+            physical_light_config = {
+                "base_topic": base_topic, "pwm_id": pwm_id}
         else:
             physical_light_config = None
 
         # Update the light map
         modified_light_map = light_grid.light_map
         modified_light_map[row][column] = physical_light_config
-        
+
         # Save the light map to the file
         with open(light_map_file, "w") as file:
             json.dump(light_grid.light_map, file)
@@ -473,7 +531,7 @@ def change_light_config(event):
 
         render_frame_at_index(slider.get())
         root.update()
-        
+
         # Close the window
         light_config_window.destroy()
 
@@ -485,7 +543,8 @@ def change_light_config(event):
             base_topic_entry.configure(state="disabled")
             pwm_id_entry.configure(state="disabled")
 
-    position_label = tk.Label(light_config_window, text=f"Configuring Light at {row+1}, {column+1}")
+    position_label = tk.Label(
+        light_config_window, text=f"Configuring Light at {row+1}, {column+1}")
     position_label.pack()
 
     state = ""
@@ -499,10 +558,12 @@ def change_light_config(event):
         else:
             state = "Online"
 
-    state_label = tk.Label(light_config_window, text=f"This light is currently: {state}")
+    state_label = tk.Label(light_config_window,
+                           text=f"This light is currently: {state}")
     state_label.pack()
 
-    light_enable_checkbox = tk.Checkbutton(light_config_window, text="Enable", command=checkbox_callback, variable=enable_var)
+    light_enable_checkbox = tk.Checkbutton(
+        light_config_window, text="Enable", command=checkbox_callback, variable=enable_var)
     light_enable_checkbox.pack()
 
     base_topic_label = tk.Label(light_config_window, text="Base Topic")
@@ -515,12 +576,14 @@ def change_light_config(event):
     pwm_id_entry = tk.Entry(light_config_window)
     pwm_id_entry.pack()
 
-    submit_button = tk.Button(light_config_window, text="Submit", command=submit_light_config, pady=5)
+    submit_button = tk.Button(
+        light_config_window, text="Submit", command=submit_light_config, pady=5)
     submit_button.pack(pady=5)
 
     if light_grid.light_map[row][column] != None:
         light_enable_checkbox.select()
-        base_topic_entry.insert(0, light_grid.light_map[row][column]["base_topic"])
+        base_topic_entry.insert(
+            0, light_grid.light_map[row][column]["base_topic"])
         pwm_id_entry.insert(0, light_grid.light_map[row][column]["pwm_id"])
     else:
         light_enable_checkbox.deselect()
@@ -533,7 +596,8 @@ def change_light_config(event):
 def render_frame_at_index(frame_index: int):
     frame = frames[frame_index]
     render_frame(frame)
-            
+
+
 def reconnect_light_controllers():
     global light_grid
     global design_mode
@@ -541,6 +605,7 @@ def reconnect_light_controllers():
     light_grid.read_light_map(light_grid.light_map)
     render_frame_at_index(slider.get())
     root.update()
+
 
 frames = [[[0]*light_grid.rows]*light_grid.columns]
 
@@ -557,13 +622,15 @@ title_label.pack()
 buttom_frame = tk.Frame(root)
 buttom_frame.pack(side="bottom", padx=10)  # Add padding to the right frame
 
-if(design_mode):
+if (design_mode):
     # Create a text label for the design mode
-    design_mode_label = tk.Label(buttom_frame, text="You are currently in design mode.\nIn this mode, physical lights will not be controlled.", font=("Arial", 12), fg="red")
+    design_mode_label = tk.Label(
+        buttom_frame, text="You are currently in design mode.\nIn this mode, physical lights will not be controlled.", font=("Arial", 12), fg="red")
     design_mode_label.pack()
 
 # Create a text label for the author
-author_label = tk.Label(buttom_frame, text="SIWAT SYSTEM 2023", font=("Arial", 12), fg="gray") 
+author_label = tk.Label(
+    buttom_frame, text="SIWAT SYSTEM 2023", font=("Arial", 12), fg="gray")
 author_label.pack()
 
 # Create another frame to the right
@@ -574,7 +641,8 @@ playback_frame = tk.Frame(management_frame)
 playback_frame.pack()
 
 # Create a text label for the playback controls
-playback_label = tk.Label(playback_frame, text="Playback Controls", font=("Arial", 10))
+playback_label = tk.Label(
+    playback_frame, text="Playback Controls", font=("Arial", 10))
 playback_label.pack()
 
 # Create a button to play the recorded frames
@@ -590,53 +658,77 @@ stop_button = tk.Button(playback_frame, text="Stop", command=stop_frames)
 stop_button.pack()
 
 # Create a button to delete the current frame
-delete_frame_button = tk.Button(playback_frame, text="Delete Frame", command=delete_frame)
+delete_frame_button = tk.Button(
+    playback_frame, text="Delete Frame", command=delete_frame)
 delete_frame_button.pack()
 
 # Create a button to move the current frame left
-move_frame_left_button = tk.Button(playback_frame, text="Move Frame Left", command=move_frame_left)
+move_frame_left_button = tk.Button(
+    playback_frame, text="Move Frame Left", command=move_frame_left)
 move_frame_left_button.pack()
 
 # Create a button to move the current frame right
-move_frame_right_button = tk.Button(playback_frame, text="Move Frame Right", command=move_frame_right)
+move_frame_right_button = tk.Button(
+    playback_frame, text="Move Frame Right", command=move_frame_right)
 move_frame_right_button.pack()
 
 # Create a button to record a frame
-add_frame_button = tk.Button(playback_frame, text="Add Frame", command=add_frame)
+add_frame_button = tk.Button(
+    playback_frame, text="Add Frame", command=add_frame)
 add_frame_button.pack()
 
 # Create a button to record a frame to the current frame
-record_frame_button = tk.Button(playback_frame, text="Record Frame", command=record_frame)
+record_frame_button = tk.Button(
+    playback_frame, text="Record Frame", command=record_frame)
 record_frame_button.pack()
 
 # Create a slider to scrub through recorded frames
-slider = tk.Scale(management_frame, label="Frame Scrubber", from_=0, to=len(frames)-1, orient="horizontal", command=scrub_frames)
+slider = tk.Scale(management_frame, label="Frame Scrubber", from_=0, to=len(
+    frames)-1, orient="horizontal", command=scrub_frames)
 slider.pack()
 
 # Create a repeat toggle
 repeat_var = tk.BooleanVar()
-repeat_toggle = tk.Checkbutton(management_frame, text="Repeat", variable=repeat_var)
+repeat_toggle = tk.Checkbutton(
+    management_frame, text="Repeat", variable=repeat_var)
 repeat_toggle.pack()
 
 # Create a scale to adjust playback speed
-speed_scale = tk.Scale(management_frame, from_=1, to=10, orient="horizontal", label="Speed", resolution=0.1)
+speed_scale = tk.Scale(management_frame, from_=1, to=10,
+                       orient="horizontal", label="Speed", resolution=0.1)
 speed_scale.set(5)  # Set the default speed to 5
 speed_scale.pack()
 
 # Create a button to reconnect the light controllers
 if not design_mode:
-    reconnect_button = tk.Button(management_frame, text="Reconnect", command=reconnect_light_controllers)
+    reconnect_button = tk.Button(
+        management_frame, text="Reconnect", command=reconnect_light_controllers)
     reconnect_button.pack()
 
 lightgrid_frame = tk.Frame(root)
 lightgrid_frame.pack()
 
+
+def resize_elements(event):
+    width = (root.winfo_width() - management_frame.winfo_width()) // columns*0.9
+    height = (root.winfo_height() - buttom_frame.winfo_height() -
+              title_label.winfo_height())/rows*0.95
+    for i in range(rows):
+        for j in range(columns):
+            element = lightgrid_frame.grid_slaves(row=i, column=j)[0]
+            element.config(width=width, height=height)
+
+
 for i in range(rows):
     for j in range(columns):
-        element = tk.Frame(lightgrid_frame, width=50, height=50, bg="white", highlightthickness=1, highlightbackground="black")
+        element = tk.Frame(lightgrid_frame, width=50, height=50,
+                           bg="white", highlightthickness=1, highlightbackground="black")
         element.grid(row=i, column=j)
-        element.bind("<Button-1>", change_color)  # Bind left mouse click event to change_color function
-        element.bind("<Button-3>", change_light_config)  # Bind right mouse click event to change_light_config function
+        # Bind left mouse click event to change_color function
+        element.bind("<Button-1>", change_color)
+        # Bind right mouse click event to change_light_config function
+        element.bind("<Button-3>", change_light_config)
+
 
 def load_animation():
     global frames
@@ -647,23 +739,33 @@ def load_animation():
         slider.config(to=len(frames)-1)  # Update the slider range
         slider.set(0)  # Set the slider value to the first frame
 
+
 # Create a label for the Save/Load section
-save_load_label = tk.Label(management_frame, text="File Management", font=("Arial", 10))
+save_load_label = tk.Label(
+    management_frame, text="File Management", font=("Arial", 10))
 save_load_label.pack()
 
 # Create a button to save the animation
-save_button = tk.Button(management_frame, text="Save Animation", command=save_animation)
+save_button = tk.Button(
+    management_frame, text="Save Animation", command=save_animation)
 save_button.pack()
 
 # Add a button to load the animation
-load_button = tk.Button(management_frame, text="Load Animation", command=load_animation)
+load_button = tk.Button(
+    management_frame, text="Load Animation", command=load_animation)
 load_button.pack()
 
 render_frame_at_index(0)
 
+root.bind("<Configure>", resize_elements)
+
+# Set the size of the root window
+root.geometry("1000x800")
+
+
 root.mainloop()
 
 # Take all connected controllers out of rapid response mode
-if rapid_mode:
+if not rapid_mode:
     for controller in light_grid.controllers.values():
         controller.disable_rapid_response_mode()
