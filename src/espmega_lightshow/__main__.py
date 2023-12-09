@@ -14,15 +14,120 @@ from time import sleep, perf_counter
 import time
 import statistics
 from importlib import util as importlib_util
-
-def restart():
-    python = sys.executable
-    os.execl(python, python, * sys.argv)
+from espmega_lightshow.scripting import UserScript
+import shutil
 
 @dataclass
 class PhysicalLightEntity:
     controller: ESPMega
     pwm_channel: int
+
+class LightGrid:
+    def __init__(self, rows: int = 0, columns: int = 0, design_mode: bool = False):
+        self.rows = rows
+        self.columns = columns
+        self.lights: list = [None] * rows * columns
+        self.controllers = {}
+        self.design_mode = design_mode
+
+    def assign_physical_light(self, row: int, column: int, physical_light: PhysicalLightEntity):
+        self.lights[row * self.columns + column] = physical_light
+
+    def get_physical_light(self, row, column):
+        return self.lights[row * self.columns + column]
+
+    def set_light_state(self, row: int, column: int, state: bool):
+        physical_light = self.get_physical_light(row, column)
+        if physical_light and not self.design_mode:
+            physical_light.controller.digital_write(
+                physical_light.pwm_channel, state)
+
+    def create_physical_light(self, row: int, column: int, controller: ESPMega, pwm_channel: int):
+        self.assign_physical_light(
+            row, column, PhysicalLightEntity(controller, pwm_channel))
+
+    def get_light_state(self, row: int, column: int):
+        physical_light = self.get_physical_light(row, column)
+        if physical_light:
+            return physical_light.controller.get_pwm_state(physical_light.pwm_channel)
+        else:
+            return None
+
+    def read_light_map(self, light_map: list):
+        self.light_map = light_map
+        self.rows = len(light_map)
+        self.columns = len(light_map[0])
+        self.lights = [None] * self.rows * self.columns
+        self.controllers = {}  # Dictionary to store existing controllers
+
+        for row_index, row in enumerate(light_map):
+            for column_index, light in enumerate(row):
+                if light is None:
+                    self.assign_physical_light(row_index, column_index, None)
+                else:
+                    base_topic = light["base_topic"]
+                    pwm_id = light["pwm_id"]
+
+                    try:
+                        if base_topic in self.controllers:
+                            controller = self.controllers[base_topic]
+                        else:
+                            if not self.design_mode:
+                                controller = ESPMega_standalone(
+                                    base_topic, light_server, light_server_port)
+                                if rapid_mode:
+                                    controller.enable_rapid_response_mode()
+                            else:
+                                controller = None
+                            self.controllers[base_topic] = controller
+                        self.create_physical_light(
+                            row_index, column_index, controller, pwm_id)
+                        self.set_light_state(row_index, column_index, False)
+                    except Exception as e:
+                        messagebox.showerror(
+                            "Controller Error", f'The controller at {base_topic} is throwing an error:\n{e}\n\nPlease note that the controller must be connected to the network and running the ESPMega firmware.\n\nYou may continue without this light, but it will not be able to be controlled.')
+                        self.assign_physical_light(
+                            row_index, column_index, None)
+
+    def read_light_map_from_file(self, filename: str):
+        try:
+            with open(filename, "r") as file:
+                light_map = json.load(file)
+            # Check if the light map is valid
+            if len(light_map) == 0:
+                raise Exception("Light map cannot be empty.")
+            if len(light_map[0]) == 0:
+                raise Exception("Light map cannot be empty.")
+            for row in light_map:
+                if len(row) != len(light_map[0]):
+                    raise Exception(
+                        "All rows in the light map must have the same length.")
+                for column in row:
+                    if column != None:
+                        if "base_topic" not in column:
+                            raise Exception(
+                                "The base_topic field is missing from a light.")
+                        if "pwm_id" not in column:
+                            raise Exception(
+                                "The pwm_id field is missing from a light.")
+                        if type(column["base_topic"]) != str:
+                            raise Exception(
+                                "The base_topic field must be a string.")
+                        if type(column["pwm_id"]) != int:
+                            raise Exception(
+                                "The pwm_id field must be an integer.")
+            self.read_light_map(light_map)
+        except FileNotFoundError:
+            messagebox.showerror(
+                "File Not Found", f"The file {filename} could not be found.")
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+            sys.exit(1)
+
+def restart():
+    python = sys.executable
+    os.execl(python, python, * sys.argv)
+
 
 global light_server
 global light_server_port
@@ -242,109 +347,6 @@ def color_to_state(color: str):
         return LIGHT_OFF
     else:
         return LIGHT_DISABLED
-
-
-class LightGrid:
-    def __init__(self, rows: int = 0, columns: int = 0, design_mode: bool = False):
-        self.rows = rows
-        self.columns = columns
-        self.lights: list = [None] * rows * columns
-        self.controllers = {}
-        self.design_mode = design_mode
-
-    def assign_physical_light(self, row: int, column: int, physical_light: PhysicalLightEntity):
-        self.lights[row * self.columns + column] = physical_light
-
-    def get_physical_light(self, row, column):
-        return self.lights[row * self.columns + column]
-
-    def set_light_state(self, row: int, column: int, state: bool):
-        physical_light = self.get_physical_light(row, column)
-        if physical_light and not self.design_mode:
-            physical_light.controller.digital_write(
-                physical_light.pwm_channel, state)
-
-    def create_physical_light(self, row: int, column: int, controller: ESPMega, pwm_channel: int):
-        self.assign_physical_light(
-            row, column, PhysicalLightEntity(controller, pwm_channel))
-
-    def get_light_state(self, row: int, column: int):
-        physical_light = self.get_physical_light(row, column)
-        if physical_light:
-            return physical_light.controller.get_pwm_state(physical_light.pwm_channel)
-        else:
-            return None
-
-    def read_light_map(self, light_map: list):
-        self.light_map = light_map
-        self.rows = len(light_map)
-        self.columns = len(light_map[0])
-        self.lights = [None] * self.rows * self.columns
-        self.controllers = {}  # Dictionary to store existing controllers
-
-        for row_index, row in enumerate(light_map):
-            for column_index, light in enumerate(row):
-                if light is None:
-                    self.assign_physical_light(row_index, column_index, None)
-                else:
-                    base_topic = light["base_topic"]
-                    pwm_id = light["pwm_id"]
-
-                    try:
-                        if base_topic in self.controllers:
-                            controller = self.controllers[base_topic]
-                        else:
-                            if not self.design_mode:
-                                controller = ESPMega_standalone(
-                                    base_topic, light_server, light_server_port)
-                                if rapid_mode:
-                                    controller.enable_rapid_response_mode()
-                            else:
-                                controller = None
-                            self.controllers[base_topic] = controller
-                        self.create_physical_light(
-                            row_index, column_index, controller, pwm_id)
-                        self.set_light_state(row_index, column_index, False)
-                    except Exception as e:
-                        messagebox.showerror(
-                            "Controller Error", f'The controller at {base_topic} is throwing an error:\n{e}\n\nPlease note that the controller must be connected to the network and running the ESPMega firmware.\n\nYou may continue without this light, but it will not be able to be controlled.')
-                        self.assign_physical_light(
-                            row_index, column_index, None)
-
-    def read_light_map_from_file(self, filename: str):
-        try:
-            with open(filename, "r") as file:
-                light_map = json.load(file)
-            # Check if the light map is valid
-            if len(light_map) == 0:
-                raise Exception("Light map cannot be empty.")
-            if len(light_map[0]) == 0:
-                raise Exception("Light map cannot be empty.")
-            for row in light_map:
-                if len(row) != len(light_map[0]):
-                    raise Exception(
-                        "All rows in the light map must have the same length.")
-                for column in row:
-                    if column != None:
-                        if "base_topic" not in column:
-                            raise Exception(
-                                "The base_topic field is missing from a light.")
-                        if "pwm_id" not in column:
-                            raise Exception(
-                                "The pwm_id field is missing from a light.")
-                        if type(column["base_topic"]) != str:
-                            raise Exception(
-                                "The base_topic field must be a string.")
-                        if type(column["pwm_id"]) != int:
-                            raise Exception(
-                                "The pwm_id field must be an integer.")
-            self.read_light_map(light_map)
-        except FileNotFoundError:
-            messagebox.showerror(
-                "File Not Found", f"The file {filename} could not be found.")
-        except Exception as e:
-            messagebox.showerror("Error", str(e))
-            sys.exit(1)
 
 
 # Load light map from light_map.json
@@ -999,6 +1001,11 @@ def run_script():
         messagebox.showerror("Script Error", "The script must define a class called CustomUserScript.")
         return
 
+    # Check if the class is a subclass of UserScript
+    if not issubclass(CustomUserScript, UserScript):
+        messagebox.showerror("Script Error", "The class CustomUserScript must be a subclass of UserScript.")
+        return
+
     # Instantiate the class
     script = CustomUserScript(rows, columns, set_tile_state, get_tile_state)
 
@@ -1068,7 +1075,7 @@ def run_script():
         root.update_idletasks()
     stop_wait_time = 15000
     stop_time = perf_counter()
-    # script.execuiting is meant to be set by the script itself to indicate that it is still running (acts like semaphores)
+    # script.execuiting is meant to be set by the script itself to indicate that it is still running
     while script.executing:
         if perf_counter() - stop_time >= stop_wait_time:
             messagebox.showerror("Script Error", "The script is taking too long to stop.\nProgram will now restart to prevent the program from freezing.")
@@ -1092,6 +1099,17 @@ def run_script():
     repeat_toggle.config(state="normal")
 render_frame_at_index(0)
 
+def generate_template_script():
+    # Ask the user where to save the script
+    filename = filedialog.asksaveasfilename(
+        defaultextension=".py", filetypes=[("Python Files", "*.py")])
+    # Copy the template script from the module directory to the specified location
+    if filename:
+        try:
+            shutil.copyfile(os.path.join(os.path.dirname(__file__), "template_script.py"), filename)
+        except Exception as e:
+            messagebox.showerror("Save Error", f"{e}")
+
 root.bind("<Configure>", resize_elements)
 
 # Create a menu bar
@@ -1105,6 +1123,7 @@ file_menu.add_command(label="Save Animation", command=save_animation)
 file_menu.add_command(label="Load Animation", command=load_animation)
 file_menu.add_separator()
 file_menu.add_command(label="Run Script", command=run_script)
+file_menu.add_command(label="Generate Template Script", command=generate_template_script)
 file_menu.add_separator()
 file_menu.add_command(label="Exit", command=root.quit)
 menu_bar.add_cascade(label="File", menu=file_menu)
