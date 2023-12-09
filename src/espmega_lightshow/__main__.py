@@ -656,6 +656,10 @@ title_label.pack()
 buttom_frame = tk.Frame(root)
 buttom_frame.pack(side="bottom", padx=10)  # Add padding to the right frame
 
+help_label = tk.Label(
+    buttom_frame, text="Left click to toggle a light.\nRight click to configure a light.", font=("Arial", 12))
+help_label.pack()
+
 if (design_mode):
     # Create a text label for the design mode
     design_mode_label = tk.Label(
@@ -804,6 +808,6 @@ root.geometry("1000x800")
 root.mainloop()
 
 # Take all connected controllers out of rapid response mode
-if not rapid_mode:
+if rapid_mode:
     for controller in light_grid.controllers.values():
         controller.disable_rapid_response_mode()
