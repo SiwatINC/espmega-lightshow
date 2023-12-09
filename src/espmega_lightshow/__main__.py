@@ -825,12 +825,6 @@ record_frame_button = ttk.Button(
     playback_frame, text="Record Frame", command=record_frame)
 record_frame_button.pack()
 
-# Create a button to reconnect the light controllers
-if not design_mode:
-    reconnect_button = tk.Button(
-        management_frame, text="Reconnect", command=reconnect_light_controllers)
-    reconnect_button.pack()
-
 lightgrid_frame = ttk.Frame(root)
 lightgrid_frame.pack()
 
@@ -844,7 +838,7 @@ def resize_elements(event):
             element = lightgrid_frame.grid_slaves(row=i, column=j)[0]
             element.config(width=width, height=height)
     slider.config(length=root.winfo_width()*0.9)
-    speed_scale.config(length=root.winfo_width()*0.5)
+    speed_scale.config(length=(root.winfo_width()-playback_section.winfo_width()-playback_status_frame.winfo_width()-20)*0.8)
 
 for i in range(rows):
     for j in range(columns):
