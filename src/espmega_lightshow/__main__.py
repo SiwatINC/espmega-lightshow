@@ -302,6 +302,29 @@ class LightGrid:
         try:
             with open(filename, "r") as file:
                 light_map = json.load(file)
+            # Check if the light map is valid
+            if len(light_map) == 0:
+                raise Exception("Light map cannot be empty.")
+            if len(light_map[0]) == 0:
+                raise Exception("Light map cannot be empty.")
+            for row in light_map:
+                if len(row) != len(light_map[0]):
+                    raise Exception(
+                        "All rows in the light map must have the same length.")
+                for column in row:
+                    if column != None:
+                        if "base_topic" not in column:
+                            raise Exception(
+                                "The base_topic field is missing from a light.")
+                        if "pwm_id" not in column:
+                            raise Exception(
+                                "The pwm_id field is missing from a light.")
+                        if type(column["base_topic"]) != str:
+                            raise Exception(
+                                "The base_topic field must be a string.")
+                        if type(column["pwm_id"]) != int:
+                            raise Exception(
+                                "The pwm_id field must be an integer.")
             self.read_light_map(light_map)
         except FileNotFoundError:
             messagebox.showerror(
@@ -776,10 +799,31 @@ def load_animation():
     global frames
     filename = filedialog.askopenfilename(filetypes=[("JSON Files", "*.json")])
     if filename:
-        with open(filename, "r") as file:
-            frames = json.load(file)
-        slider.config(to=len(frames)-1)  # Update the slider range
-        slider.set(0)  # Set the slider value to the first frame
+        try:
+            with open(filename, "r") as file:
+                temp_frames = json.load(file)
+                # Check if the animation is empty
+                if len(temp_frames) == 0:
+                    raise Exception("Animation cannot be empty.")
+                # Check if the animation has the same dimensions as the light map
+                if len(temp_frames[0]) != len(light_grid.light_map) or len(temp_frames[0][0]) != len(light_grid.light_map[0]):
+                    raise Exception(
+                        "The animation must have the same dimensions as the light map.")
+                # Check the animation for invalid frames
+                for frame in temp_frames:
+                    for row in frame:
+                        for light in row:
+                            if type(light) != bool:
+                                raise Exception(
+                                    "The animation must only contain boolean values.")
+                frames = temp_frames
+            slider.config(to=len(frames)-1)  # Update the slider range
+            slider.set(0)  # Set the slider value to the first frame
+        except FileNotFoundError:
+            messagebox.showerror(
+                "File Not Found", f"The file {filename} could not be found.")
+        except Exception as e:
+            messagebox.showerror("Load Error", str(e))
 
 
 # Create a label for the Save/Load section
