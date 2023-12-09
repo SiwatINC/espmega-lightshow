@@ -915,6 +915,30 @@ controller_menu.add_command(
     label="Generate Light Map", command=open_generate_light_map_template_window)
 menu_bar.add_cascade(label="Controllers", menu=controller_menu)
 
+def open_about_popup():
+    about_popup = tk.Toplevel(root)
+    about_popup.title("About")
+    about_popup.iconbitmap(icon_file)
+    about_popup.geometry("350x130")
+    about_popup.resizable(False, False)
+
+    # Create a label for the title
+    title_label = ttk.Label(about_popup, text="ESPMega Light Show", font=("Arial", 24))
+    title_label.pack()
+
+    # Create a label for the author
+    author_label = ttk.Label(about_popup, text="Made by Siwat Sirichai")
+    author_label.pack()
+
+    # Create a label for the company name
+    company_label = ttk.Label(about_popup, text="SIWAT SYSTEM 2023")
+    company_label.pack()
+
+# Create the help menu
+help_menu = tk.Menu(menu_bar, tearoff=False)
+help_menu.add_command(label="About", command=open_about_popup)
+menu_bar.add_cascade(label="Help", menu=help_menu)
+
 # Set the size of the root window
 root.geometry("1000x800")
 
