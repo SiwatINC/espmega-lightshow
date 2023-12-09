@@ -16,6 +16,8 @@ import statistics
 from importlib import util as importlib_util
 from espmega_lightshow.scripting import UserScript
 import shutil
+import traceback
+import webbrowser
 
 @dataclass
 class PhysicalLightEntity:
@@ -1026,6 +1028,7 @@ def run_script():
     pause_button.config(state="disabled")
     stop_button.config(state="disabled")
     repeat_toggle.config(state="disabled")
+    playback_status_label.config(text="Status: Scripted")
     
     # Create a new window to display the script controls
     script_controls_window = tk.Toplevel(root)
@@ -1058,15 +1061,30 @@ def run_script():
     script_stop_button.pack(pady=5)
     start_time = perf_counter()
     begin_time = perf_counter()
+    ignore_execution_flag = False
     while True:
         if not script.active:
+            break
+        # Check if script window is closed
+        if not script_controls_window.winfo_exists():
+            script.active = False
             break
         # Calculate delay in seconds from bpm
         delay = 60 / speed_scale.get()
         if perf_counter() - start_time >= delay:
             start_time = perf_counter()
             time_epoch = perf_counter() - begin_time
-            script.__draw_frame__(time_epoch)
+            # Execute the script using try-except to catch errors
+            # This script will be written by the user and might contain errors
+            try:
+                script.__draw_frame__(time_epoch)
+            except Exception as e:
+                messagebox.showerror("Script Error", traceback.format_exc())
+                # Stop the script
+                script.active = False
+                # Set the ignore execution flag to true to prevent the program from waiting for the script to stop
+                ignore_execution_flag = True
+                break
             # Update the frame label
             script_frame_label.config(text=f"Frame: {script.frame_count}")
         # Update the time label
@@ -1076,7 +1094,7 @@ def run_script():
     stop_wait_time = 15000
     stop_time = perf_counter()
     # script.execuiting is meant to be set by the script itself to indicate that it is still running
-    while script.executing:
+    while script.executing and not ignore_execution_flag:
         if perf_counter() - stop_time >= stop_wait_time:
             messagebox.showerror("Script Error", "The script is taking too long to stop.\nProgram will now restart to prevent the program from freezing.")
             restart()
@@ -1097,6 +1115,7 @@ def run_script():
     pause_button.config(state="normal")
     stop_button.config(state="normal")
     repeat_toggle.config(state="normal")
+    playback_status_label.config(text="Status: Stopped")
 render_frame_at_index(0)
 
 def generate_template_script():
@@ -1143,7 +1162,7 @@ def open_about_popup():
     about_popup = tk.Toplevel(root)
     about_popup.title("About")
     about_popup.iconbitmap(icon_file)
-    about_popup.geometry("350x130")
+    about_popup.geometry("350x110")
     about_popup.resizable(False, False)
 
     # Create a label for the title
@@ -1154,6 +1173,13 @@ def open_about_popup():
     author_label = ttk.Label(about_popup, text="Made by Siwat Sirichai")
     author_label.pack()
 
+    # Create link to the github repository
+    def open_github():
+        webbrowser.open("https://github.com/SiwatINC/espmega-lightshow/")
+    github_link = ttk.Label(about_popup, text="GitHub Repository", foreground="blue", cursor="hand2")
+    github_link.pack()
+    github_link.bind("<Button-1>", lambda e: open_github())
+
     # Create a label for the company name
     company_label = ttk.Label(about_popup, text="SIWAT SYSTEM 2023")
     company_label.pack()
@@ -1161,7 +1187,9 @@ def open_about_popup():
 # Create the help menu
 help_menu = tk.Menu(menu_bar, tearoff=False)
 help_menu.add_command(label="About", command=open_about_popup)
+help_menu.add_command(label="Documentation", command=lambda: webbrowser.open("https://github.com/SiwatINC/espmega-lightshow/wiki"))
 menu_bar.add_cascade(label="Help", menu=help_menu)
+
 
 # Set the size of the root window
 root.geometry("1000x800")

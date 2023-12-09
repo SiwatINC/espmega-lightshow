@@ -9,7 +9,10 @@ class UserScript:
         self.active = True
         self.executing = False
         self.frame_count = 0
-
+        # Clear the board
+        for row in range(rows):
+            for column in range(columns):
+                self.set_tile_state(row, column, False)
     def __draw_frame__(self, current_time: float):
         self.executing = True
         self.frame_count += 1
