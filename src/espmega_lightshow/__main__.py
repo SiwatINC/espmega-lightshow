@@ -9,8 +9,7 @@ import sys
 from tkinter import messagebox
 import tkinter.messagebox as messagebox
 import os
-import threading
-from time import sleep, perf_counter, sleep
+from time import sleep, perf_counter
 
 @dataclass
 class PhysicalLightEntity:
@@ -24,14 +23,6 @@ global rapid_mode
 global light_map_file
 global light_grid
 global design_mode
-global playback_semaphore
-
-debug_mode = True
-
-if not debug_mode:
-    print = lambda *args, **kwargs: None
-
-playback_semaphore = threading.Semaphore()
 
 light_map_file = ""  # Default light map file
 
@@ -209,8 +200,6 @@ design_mode_var.set(design_mode)
 # Start the tkinter main loop
 root.mainloop()
 
-
-print(design_mode)
 # Light state constants
 LIGHT_DISABLED = -1
 LIGHT_OFF = 0
@@ -372,7 +361,6 @@ def get_tile_state(row: int, column: int):
 
 
 def change_color(event):
-    global playback_active
     if not playback_active:
         row = event.widget.grid_info()["row"]
         column = event.widget.grid_info()["column"]
@@ -454,69 +442,53 @@ def move_frame_right():
     root.update()
 
 
-
-def play_frames_thread():
-    print("Playback thread started")
+def play_frames():
     global animation_id  # Declare animation_id as a global variable
     global playback_active
     global current_frame
-    if not playback_active:
+    playback_active = True
+    current_frame = slider.get()
+    # If the current frame is the last frame and repeat is disabled, don't play
+    if current_frame == len(frames)-1 and not repeat_var.get():
         return
     playback_status_label.config(text="Status: Playing")
     while current_frame < len(frames):
         if not playback_active:
             break
-        print("Calling render_frame_at_index")
         render_frame_at_index(current_frame)
-        print("Rendered frame")
-        print("Setting slider")
         slider.set(current_frame)  # Update the slider position
-        print("Set slider")
         speed = speed_scale.get()  # Get the value of the speed scale
-        print("Got speed")
-        # Calculate the delay between frames based on speed
+        # Calculate the delay between frames in milliseconds based on speed
         delay = int(60000 / speed)
         root.update()
-        print("Updated root")
-        # If there are no frames left and repeat is disaled, stop the animation
-        if current_frame == len(frames)-1 and not repeat_var.get():
-            playback_active = False
-            playback_status_label.config(text="Status: Idle")
-            break
-        print("Sleeping")
         # Delay between frames (in seconds)
         start_time = perf_counter()
+        should_increment = True
         while perf_counter() - start_time < delay/1000:
             if not playback_active:
                 break
-            sleep(0.05)
-        if not playback_active:
-            break
-        print("Slept")
-        print("Incrementing current_frame")
-        current_frame = slider.get()
-        current_frame += 1
-        print("Incremented current_frame")
+            if speed_scale.get() != speed:
+                should_increment = False
+                break
+            if slider.get() != current_frame:
+                should_increment = False
+                break
+            root.update()
+            root.update_idletasks()
+        if should_increment:
+            current_frame = slider.get()
+            current_frame += 1
+        else:
+            current_frame = slider.get()
     repeat = repeat_var.get()  # Get the value of the repeat toggle
     if (repeat and playback_active):
         current_frame = 0
         slider.set(current_frame)
-        print("Calling play_frames_thread again")
-        play_frames_thread()
+        play_frames()
     else:
-        playback_active = False
-        playback_status_label.config(text="Status: Idle")
-    print("Playback thread ended")
+        playback_status_label.config(text="Status: Stopped")
 
-def play_frames():
-    global animation_id  # Declare animation_id as a global variable
-    global playback_active
-    global current_frame
-    if not playback_active:
-        playback_active = True
-        threading.Thread(target=play_frames_thread).start()
-    current_frame = slider.get()
-    
+
 
 def pause_frames():
     global playback_active
@@ -528,6 +500,7 @@ def stop_frames():
     playback_active = False
     slider.set(0)
     render_frame_at_index(0)
+    root.after_cancel(animation_id)
 
 
 def scrub_frames(value):
@@ -537,17 +510,10 @@ def scrub_frames(value):
 
 
 def render_frame(frame: list):
-    print("Acquiring playback semaphore")
-    if playback_semaphore.acquire(blocking=False):
-        print("Playback semaphore acquired")
-        for i in range(rows):
-            for j in range(columns):
-                element = lightgrid_frame.grid_slaves(row=i, column=j)[0]
-                set_tile_state(i, j, frame[i][j])
-        playback_semaphore.release()
-        print("Playback semaphore released")
-    else:
-        print("Failed to acquire playback semaphore")
+    for i in range(rows):
+        for j in range(columns):
+            element = lightgrid_frame.grid_slaves(row=i, column=j)[0]
+            set_tile_state(i, j, frame[i][j])
 
 
 def change_light_config(event):
@@ -713,8 +679,8 @@ playback_label = tk.Label(
     playback_frame, text="Playback Controls", font=("Arial", 10))
 playback_label.pack()
 
-# Create a label to show the current playback status
-playback_status_label = tk.Label(playback_frame, text="Status: Idle")
+# Create a text label to show the current playback status
+playback_status_label = tk.Label(playback_frame, text="Status: Stopped")
 playback_status_label.pack()
 
 # Create a button to play the recorded frames
