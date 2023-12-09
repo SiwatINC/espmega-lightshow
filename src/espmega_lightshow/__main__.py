@@ -57,7 +57,7 @@ except KeyError:
 # Create a tkinter gui window ask for the light server ip and port and whether to enable rapid response mode
 root = tk.Tk()
 root.title("ELS Pre-Flight")
-root.geometry("600x300")
+root.geometry("600x350")
 root.resizable(False, False)
 
 
