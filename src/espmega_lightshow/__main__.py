@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import ttk
 import json
 from tkinter import filedialog
 from espmega.espmega_r3 import ESPMega_standalone, ESPMega_slave, ESPMega
@@ -10,6 +11,10 @@ from tkinter import messagebox
 import tkinter.messagebox as messagebox
 import os
 from time import sleep, perf_counter
+
+def restart():
+    python = sys.executable
+    os.execl(python, python, * sys.argv)
 
 @dataclass
 class PhysicalLightEntity:
@@ -64,7 +69,7 @@ except KeyError:
 root = tk.Tk()
 root.title("ELS Pre-Flight")
 root.iconbitmap(icon_file)
-root.geometry("600x350")
+root.geometry("600x360")
 root.resizable(False, False)
 
 
@@ -99,52 +104,55 @@ def open_light_map_file_chooser_dialog():
         filetypes=[("JSON Files", "*.json")])
     light_map_button.config(text=light_map_file)
 
+# Create a label for the title
+title_label = ttk.Label(root, text="ESPMega Lightshow Setup", font=("Arial", 24))
+title_label.pack()
 
 # Create a small label to explain design mode
-design_mode_label = tk.Label(
+design_mode_label = ttk.Label(
     root, text="Design mode allows you to play with the lights without connecting to a controller.\nThis is useful for testing lighting designs.")
 design_mode_label.pack()
 
 # Create a design mode toggle
 design_mode_var = tk.BooleanVar()
-design_mode_toggle = tk.Checkbutton(
+design_mode_toggle = ttk.Checkbutton(
     root, text="Design Mode", variable=design_mode_var)
 design_mode_toggle.pack()
 
 # Create a field to enter the light server ip
-light_server_label = tk.Label(root, text="Light Server IP")
+light_server_label = ttk.Label(root, text="Light Server IP")
 light_server_label.pack()
-light_server_entry = tk.Entry(root)
+light_server_entry = ttk.Entry(root)
 light_server_entry.pack()
 
 # Create a field to enter the light server port
-light_server_port_label = tk.Label(root, text="Light Server Port")
+light_server_port_label = ttk.Label(root, text="Light Server Port")
 light_server_port_label.pack()
-light_server_port_entry = tk.Entry(root)
+light_server_port_entry = ttk.Entry(root)
 light_server_port_entry.pack()
 
 # Create a small label to explain rapid response mode
-rapid_response_label = tk.Label(
+rapid_response_label = ttk.Label(
     root, text="Rapid response mode makes the lights respond faster by disabling the acknowledgement from the controller.\nThis is useful if multiple lights are being controlled at once and are on the same controller.")
 rapid_response_label.pack()
 
 # Create a checkbox to enable rapid response mode
 rapid_mode_var = tk.BooleanVar()
-rapid_mode_toggle = tk.Checkbutton(
+rapid_mode_toggle = ttk.Checkbutton(
     root, text="Rapid Response Mode", variable=rapid_mode_var)
 rapid_mode_toggle.pack()
 
 # Create a text label for the light map file chooser
-light_map_label = tk.Label(root, text="Light Map File")
+light_map_label = ttk.Label(root, text="Light Map File")
 light_map_label.pack()
 
 # Create a button to open a file dialog asking to select the light map file
-light_map_button = tk.Button(root, text="Browse..."if light_map_file ==
+light_map_button = ttk.Button(root, text="Browse..."if light_map_file ==
                              "" else light_map_file, command=open_light_map_file_chooser_dialog)
 light_map_button.pack(pady=5)
 
 # Create a button to submit the configuration and close the window
-submit_button = tk.Button(root, text="Submit", command=submit_config, pady=5)
+submit_button = ttk.Button(root, text="Submit", command=submit_config)
 submit_button.pack(pady=5)
 
 
@@ -152,21 +160,21 @@ def open_generate_light_map_template_window():
     light_map_generator_window = tk.Toplevel(root)
     light_map_generator_window.title("Generate Map")
     light_map_generator_window.iconbitmap(icon_file)
-    light_map_generator_window.geometry("250x150")
+    light_map_generator_window.geometry("250x130")
     light_map_generator_window.resizable(False, False)
 
     # Create a field to enter the number of rows
-    light_map_rows_label = tk.Label(
+    light_map_rows_label = ttk.Label(
         light_map_generator_window, text="Number of Rows")
     light_map_rows_label.pack()
-    light_map_rows_entry = tk.Entry(light_map_generator_window)
+    light_map_rows_entry = ttk.Entry(light_map_generator_window)
     light_map_rows_entry.pack()
 
     # Create a field to enter the number of columns
-    light_map_columns_label = tk.Label(
+    light_map_columns_label = ttk.Label(
         light_map_generator_window, text="Number of Columns")
     light_map_columns_label.pack()
-    light_map_columns_entry = tk.Entry(light_map_generator_window)
+    light_map_columns_entry = ttk.Entry(light_map_generator_window)
     light_map_columns_entry.pack()
 
     def submit_light_map_template():
@@ -181,13 +189,13 @@ def open_generate_light_map_template_window():
         light_map_generator_window.destroy()
 
     # Create a button to submit the configuration and close the window
-    submit_button = tk.Button(light_map_generator_window,
-                              text="Submit", command=submit_light_map_template, pady=5)
+    submit_button = ttk.Button(light_map_generator_window,
+                              text="Generate", command=submit_light_map_template)
     submit_button.pack(pady=5)
 
 
 # Create a button to generate a template light map file with the specified dimensions with all lights disabled
-light_map_generate_button = tk.Button(
+light_map_generate_button = ttk.Button(
     root, text="Generate Light Map Template", command=open_generate_light_map_template_window)
 light_map_generate_button.pack(pady=5)
 
@@ -674,78 +682,78 @@ root.iconbitmap(icon_file)
 
 
 # Create a label for the title
-title_label = tk.Label(root, text="ESPMega Light Show", font=("Arial", 24))
+title_label = ttk.Label(root, text="ESPMega Light Show", font=("Arial", 24))
 title_label.pack()
 
 # Create another frame to the bottom
-buttom_frame = tk.Frame(root)
+buttom_frame = ttk.Frame(root)
 buttom_frame.pack(side="bottom", padx=10)  # Add padding to the right frame
 
-help_label = tk.Label(
+help_label = ttk.Label(
     buttom_frame, text="Left click to toggle a light.\nRight click to configure a light.", font=("Arial", 12))
 help_label.pack()
 
 if (design_mode):
     # Create a text label for the design mode
-    design_mode_label = tk.Label(
-        buttom_frame, text="You are currently in design mode.\nIn this mode, physical lights will not be controlled.", font=("Arial", 12), fg="red")
+    design_mode_label = ttk.Label(
+        buttom_frame, text="You are currently in design mode.\nIn this mode, physical lights will not be controlled.", font=("Arial", 12))
     design_mode_label.pack()
 
 # Create a text label for the author
-author_label = tk.Label(
-    buttom_frame, text="SIWAT SYSTEM 2023", font=("Arial", 12), fg="gray")
+author_label = ttk.Label(
+    buttom_frame, text="SIWAT SYSTEM 2023", font=("Arial", 12))
 author_label.pack()
 
 # Create another frame to the right
-management_frame = tk.Frame(root)
+management_frame = ttk.Frame(root)
 management_frame.pack(side="right", padx=10)  # Add padding to the right frame
 
-playback_frame = tk.Frame(management_frame)
+playback_frame = ttk.Frame(management_frame)
 playback_frame.pack()
 
 # Create a text label for the playback controls
-playback_label = tk.Label(
+playback_label = ttk.Label(
     playback_frame, text="Playback Controls", font=("Arial", 10))
 playback_label.pack()
 
 # Create a text label to show the current playback status
-playback_status_label = tk.Label(playback_frame, text="Status: Stopped")
+playback_status_label = ttk.Label(playback_frame, text="Status: Stopped")
 playback_status_label.pack()
 
 # Create a button to play the recorded frames
-play_button = tk.Button(playback_frame, text="Play", command=play_frames)
+play_button = ttk.Button(playback_frame, text="Play", command=play_frames)
 play_button.pack()
 
 # Create a button to pause the animation
-pause_button = tk.Button(playback_frame, text="Pause", command=pause_frames)
+pause_button = ttk.Button(playback_frame, text="Pause", command=pause_frames)
 pause_button.pack()
 
 # Create a button to stop the animation
-stop_button = tk.Button(playback_frame, text="Stop", command=stop_frames)
+stop_button = ttk.Button(playback_frame, text="Stop", command=stop_frames)
 stop_button.pack()
 
 # Create a button to delete the current frame
-delete_frame_button = tk.Button(
+delete_frame_button = ttk.Button(
     playback_frame, text="Delete Frame", command=delete_frame)
 delete_frame_button.pack()
 
 # Create a button to move the current frame left
-move_frame_left_button = tk.Button(
+move_frame_left_button = ttk.Button(
     playback_frame, text="Move Frame Left", command=move_frame_left)
 move_frame_left_button.pack()
 
 # Create a button to move the current frame right
-move_frame_right_button = tk.Button(
+move_frame_right_button = ttk.Button(
     playback_frame, text="Move Frame Right", command=move_frame_right)
 move_frame_right_button.pack()
 
 # Create a button to record a frame
-add_frame_button = tk.Button(
+add_frame_button = ttk.Button(
     playback_frame, text="Add Frame", command=add_frame)
 add_frame_button.pack()
 
 # Create a button to record a frame to the current frame
-record_frame_button = tk.Button(
+record_frame_button = ttk.Button(
     playback_frame, text="Record Frame", command=record_frame)
 record_frame_button.pack()
 
@@ -772,7 +780,7 @@ if not design_mode:
         management_frame, text="Reconnect", command=reconnect_light_controllers)
     reconnect_button.pack()
 
-lightgrid_frame = tk.Frame(root)
+lightgrid_frame = ttk.Frame(root)
 lightgrid_frame.pack()
 
 
@@ -828,25 +836,32 @@ def load_animation():
         except Exception as e:
             messagebox.showerror("Load Error", str(e))
 
-
-# Create a label for the Save/Load section
-save_load_label = tk.Label(
-    management_frame, text="File Management", font=("Arial", 10))
-save_load_label.pack()
-
-# Create a button to save the animation
-save_button = tk.Button(
-    management_frame, text="Save Animation", command=save_animation)
-save_button.pack()
-
-# Add a button to load the animation
-load_button = tk.Button(
-    management_frame, text="Load Animation", command=load_animation)
-load_button.pack()
-
 render_frame_at_index(0)
 
 root.bind("<Configure>", resize_elements)
+
+# Create a menu bar
+menu_bar = tk.Menu(root)
+root.config(menu=menu_bar)
+
+# Create the file menu
+file_menu = tk.Menu(menu_bar, tearoff=False)
+file_menu.add_command(label="Save Animation", command=save_animation)
+file_menu.add_command(label="Load Animation", command=load_animation)
+file_menu.add_separator()
+file_menu.add_command(label="Exit", command=root.quit)
+menu_bar.add_cascade(label="File", menu=file_menu)
+
+# Create the controller menu
+controller_menu = tk.Menu(menu_bar, tearoff=False)
+controller_menu.add_command(
+    label="Reconnect Controllers", command=reconnect_light_controllers)
+controller_menu.add_command(
+    label="Reconfigure Controllers", command=restart)
+controller_menu.add_separator()
+controller_menu.add_command(
+    label="Generate Light Map", command=open_generate_light_map_template_window)
+menu_bar.add_cascade(label="Controllers", menu=controller_menu)
 
 # Set the size of the root window
 root.geometry("1000x800")
