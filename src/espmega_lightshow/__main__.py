@@ -11,6 +11,8 @@ from tkinter import messagebox
 import tkinter.messagebox as messagebox
 import os
 from time import sleep, perf_counter
+import time
+import statistics
 
 def restart():
     python = sys.executable
@@ -20,7 +22,6 @@ def restart():
 class PhysicalLightEntity:
     controller: ESPMega
     pwm_channel: int
-
 
 global light_server
 global light_server_port
@@ -219,6 +220,9 @@ COLOR_OFF_OFFLINE = "brown4"
 COLOR_ON_OFFLINE = "red"
 
 ENABLE_PHYSICAL_SYNCRONIZATION = True
+
+MIN_BPM = 20
+MAX_BPM = 200
 
 
 def state_to_color(state: int):
@@ -667,6 +671,9 @@ def frame_forward():
     if frame_index < len(frames)-1:
         slider.set(frame_index+1)
         render_frame_at_index(frame_index+1)
+    if frame_index == len(frames)-1 and repeat_var.get():
+        slider.set(0)
+        render_frame_at_index(0)
     root.update()
 
 def frame_backward():
@@ -674,6 +681,9 @@ def frame_backward():
     if frame_index > 0:
         slider.set(frame_index-1)
         render_frame_at_index(frame_index-1)
+    if frame_index == 0 and repeat_var.get():
+        slider.set(len(frames)-1)
+        render_frame_at_index(len(frames)-1)
     root.update()
 
 def reconnect_light_controllers():
@@ -768,7 +778,7 @@ separator = ttk.Separator(playback_grid, orient="vertical")
 separator.pack(side="left", padx=10, fill="y")
 
 # Create a scale to adjust playback speed
-speed_scale = tk.Scale(playback_grid, from_=40, to=200,
+speed_scale = tk.Scale(playback_grid, from_=MIN_BPM, to=MAX_BPM,
                        orient="horizontal", label="BPM", resolution=0.1)
 speed_scale.set(120)
 speed_scale.pack()
@@ -814,17 +824,17 @@ separator.pack(fill="x")
 
 # Create a button to add a frame to the end of the animation
 add_frame_button = tk.Button(
-    playback_frame, text="Add Frame", command=add_frame, height=5, width=15, bg="green", fg="white")
+    playback_frame, text="Add Frame", command=add_frame, height=4, width=15, bg="green", fg="white")
 add_frame_button.pack(pady=5)
 
 # Create a button to record a frame to the current frame
 record_frame_button = tk.Button(
-    playback_frame, text="Record Frame", command=record_frame, height=5, width=15, bg="red", fg="white")
+    playback_frame, text="Record Frame", command=record_frame, height=4, width=15, bg="red", fg="white")
 record_frame_button.pack(pady=5)
 
 # Create a button to delete the current frame
 delete_frame_button = tk.Button(
-    playback_frame, text="Delete Frame", command=delete_frame, height=5, width=15, bg="firebrick4", fg="white")
+    playback_frame, text="Delete Frame", command=delete_frame, height=4, width=15, bg="firebrick4", fg="white")
 delete_frame_button.pack(pady=5)
 
 # Create a separator to seperate the record controls from the label
@@ -849,7 +859,55 @@ move_frame_right_button = tk.Button(
     frame_manipulation_frame, text="Right", command=move_frame_right, height=2, width=8, bg="orange", fg="black")
 move_frame_right_button.grid(row=1, column=1, pady=5)
 
+# Create a separator to seperate the frame manipulation controls from the utility
+separator = ttk.Separator(playback_frame, orient="horizontal")
+separator.pack(fill="x")
 
+# Create a text label for the utility
+utility_label = ttk.Label(management_frame, text="BPM Counter", font=("Arial", 10))
+utility_label.pack()
+
+
+
+bpm_samples = []
+
+def bpm_counter_callback():
+    global last_press_time, bpm_samples
+    current_time = time.time()
+    if last_press_time is not None:
+        bpm = 60 / (current_time - last_press_time)
+        bpm_samples.append(bpm)
+        if len(bpm_samples) > 5:
+            bpm_samples = bpm_samples[-5:]  # Keep only the last 5 samples
+        bpm_average = statistics.mean(bpm_samples)
+        if len(bpm_samples) == 1:
+            bpm_filtered = bpm_samples
+        else:
+            bpm_filtered = [b for b in bpm_samples if abs(b - bpm_average) <= 2 * statistics.stdev(bpm_samples)]
+        bpm = statistics.mean(bpm_filtered)
+        bpm_counter_button.config(text=f"{bpm:.2f} BPM")
+        
+        # Change button color based on BPM
+        if bpm < 100:
+            bpm_counter_button.config(bg="blue")
+        elif bpm >= 100 and bpm < 150:
+            bpm_counter_button.config(bg="green")
+        else:
+            bpm_counter_button.config(bg="red")
+        
+    last_press_time = current_time
+
+last_press_time = None
+
+# Create a BPM counter button
+bpm_counter_button = tk.Button(
+    management_frame, text="Click Me!", command=bpm_counter_callback, height=2, width=15, bg="blue", fg="white")
+bpm_counter_button.pack(pady=5)
+
+# Create a button to apply the BPM to the speed scale
+bpm_apply_button = tk.Button(
+    management_frame, text="Apply BPM", command=lambda: speed_scale.set(bpm_counter_button.cget("text").split(" ")[0]), height=2, width=15, bg="blue", fg="white")
+bpm_apply_button.pack(pady=5)
 
 lightgrid_frame = ttk.Frame(root)
 lightgrid_frame.pack()
