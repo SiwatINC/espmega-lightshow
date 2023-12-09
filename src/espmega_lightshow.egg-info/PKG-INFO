@@ -1,12 +1,13 @@
 Metadata-Version: 2.1
 Name: espmega-lightshow
-Version: 1.6
+Version: 1.8
 Home-page: https://github.com/SiwatINC/espmega-lightshow
 Author: Siwat Sirichai
 Author-email: siwat@siwatinc.com
 License: Apache 2.0
 Keywords: light mqtt espmega
 Description-Content-Type: text/markdown
+Requires-Dist: espmega
 
 # ESPMega Light Show
 

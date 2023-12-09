@@ -476,6 +476,7 @@ def play_frames():
         playback_active = False
         return
     playback_status_label.config(text="Status: Playing")
+    start_time = perf_counter()
     while current_frame < len(frames):
         if not playback_active:
             break
@@ -486,7 +487,6 @@ def play_frames():
         delay = int(60000 / speed)
         root.update()
         # Delay between frames (in seconds)
-        start_time = perf_counter()
         should_increment = True
         while perf_counter() - start_time < delay/1000:
             if not playback_active:
@@ -504,6 +504,7 @@ def play_frames():
             current_frame += 1
         else:
             current_frame = slider.get()
+        start_time = perf_counter()
     repeat = repeat_var.get()  # Get the value of the repeat toggle
     if (repeat and playback_active):
         current_frame = 0
@@ -850,6 +851,56 @@ root.bind("<Configure>", resize_elements)
 
 # Set the size of the root window
 root.geometry("1000x800")
+
+def handle_spacebar(event):
+    # Inclement the current frame by 1 then render the frame
+    # unless the current frame is the last frame then loop back to the first frame and render it
+    if slider.get() == len(frames)-1:
+        slider.set(0)
+        render_frame_at_index(0)
+    else:
+        slider.set(slider.get()+1)
+        render_frame_at_index(slider.get())
+
+def handle_up_arrow(event):
+    # Increase the bpm by 0.5 if increasing the bpm will not cause the value to exceed 200 if it exceeds 200, set it to 200
+    if speed_scale.get() + 0.5 <= 200:
+        speed_scale.set(speed_scale.get()+0.5)
+    else:
+        speed_scale.set(200)
+
+def handle_down_arrow(event):
+    # Decrease the bpm by 0.5 if decreasing the bpm will not cause the value to go below 40 if it goes below 40, set it to 40
+    if speed_scale.get() - 0.5 >= 40:
+        speed_scale.set(speed_scale.get()-0.5)
+    else:
+        speed_scale.set(40)
+
+def handle_left_arrow(event):
+    # Decrement the current frame by 1 then render the frame
+    # unless the current frame is the first frame then loop back to the last frame and render it
+    if slider.get() == 0:
+        slider.set(len(frames)-1)
+        render_frame_at_index(len(frames)-1)
+    else:
+        slider.set(slider.get()-1)
+        render_frame_at_index(slider.get())
+
+def handle_right_arrow(event):
+    # Increment the current frame by 1 then render the frame
+    # unless the current frame is the last frame then loop back to the first frame and render it
+    if slider.get() == len(frames)-1:
+        slider.set(0)
+        render_frame_at_index(0)
+    else:
+        slider.set(slider.get()+1)
+        render_frame_at_index(slider.get())
+
+root.bind("<space>", handle_spacebar)
+root.bind("<Up>", handle_up_arrow)
+root.bind("<Down>", handle_down_arrow)
+root.bind("<Left>", handle_left_arrow)
+root.bind("<Right>", handle_right_arrow)
 
 
 root.mainloop()
