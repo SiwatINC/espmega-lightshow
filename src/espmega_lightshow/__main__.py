@@ -695,7 +695,7 @@ root.iconbitmap(icon_file)
 
 
 # Create a label for the title
-title_label = ttk.Label(root, text="ESPMega Light Show", font=("Helvetica", 36, "bold"), foreground="#333333")
+title_label = ttk.Label(root, text="ESPMega Light Show", font=("Helvetica", 36, "bold"), foreground="gray26")
 title_label.pack()
 
 # Create another frame to the bottom
@@ -773,6 +773,10 @@ speed_scale = tk.Scale(playback_grid, from_=40, to=200,
 speed_scale.set(120)
 speed_scale.pack()
 
+# Create a separator to seperate the slider from the top frame
+separator = ttk.Separator(buttom_frame, orient="horizontal")
+separator.pack(fill="x", pady=10)
+
 # Create a slider to scrub through recorded frames
 slider = tk.Scale(buttom_frame, label="Timeline", from_=0, to=len(
     frames)-1, orient="horizontal", command=scrub_frames,length=root.winfo_width()*0.9)
@@ -808,15 +812,15 @@ record_label.pack()
 separator = ttk.Separator(playback_frame, orient="horizontal")
 separator.pack(fill="x")
 
-# Create a button to record a frame to the current frame
-record_frame_button = tk.Button(
-    playback_frame, text="Record Frame", command=record_frame, height=5, width=15, bg="red", fg="white")
-record_frame_button.pack(pady=5)
-
 # Create a button to add a frame to the end of the animation
 add_frame_button = tk.Button(
     playback_frame, text="Add Frame", command=add_frame, height=5, width=15, bg="green", fg="white")
 add_frame_button.pack(pady=5)
+
+# Create a button to record a frame to the current frame
+record_frame_button = tk.Button(
+    playback_frame, text="Record Frame", command=record_frame, height=5, width=15, bg="red", fg="white")
+record_frame_button.pack(pady=5)
 
 # Create a button to delete the current frame
 delete_frame_button = tk.Button(
@@ -837,12 +841,12 @@ frame_manipulation_frame.pack()
 
 # Create a button to move the current frame left
 move_frame_left_button = tk.Button(
-    frame_manipulation_frame, text="Left", command=move_frame_left, height=2, width=8, bg="orange", fg="white")
+    frame_manipulation_frame, text="Left", command=move_frame_left, height=2, width=8, bg="orange", fg="black")
 move_frame_left_button.grid(row=1, column=0, pady=5)
 
 # Create a button to move the current frame right
 move_frame_right_button = tk.Button(
-    frame_manipulation_frame, text="Right", command=move_frame_right, height=2, width=8, bg="orange", fg="white")
+    frame_manipulation_frame, text="Right", command=move_frame_right, height=2, width=8, bg="orange", fg="black")
 move_frame_right_button.grid(row=1, column=1, pady=5)
 
 
