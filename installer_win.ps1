@@ -11,7 +11,7 @@ refreshenv
 
 # Install Python3 and espmega_lightshow
 choco install -y python3
-pip3 install espmega_lightshow
+pip3 install --upgrade espmega_lightshow
 
 # Get python.exe path
 $pythonPath = (Get-Command pythonw).Source
