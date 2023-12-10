@@ -6,3 +6,4 @@ dist/
 *.exe
 config.json
 light_map.json
+*.pyc

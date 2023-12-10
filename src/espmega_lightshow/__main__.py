@@ -644,7 +644,7 @@ def change_light_config(event):
             pwm_id_entry.configure(state="disabled")
 
     position_label = tk.Label(
-        light_config_window, text=f"Configuring Light at {row+1}, {column+1}")
+        light_config_window, text=f"Configuring Light at {row}, {column}")
     position_label.pack()
 
     state = ""
