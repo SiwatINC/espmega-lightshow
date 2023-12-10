@@ -137,6 +137,11 @@ global rapid_mode
 global light_map_file
 global light_grid
 global design_mode
+global animation_quick_load_slots
+global script_quick_load_slots
+
+animation_quick_load_slots = [None]*5
+script_quick_load_slots = [None]*5
 
 light_map_file = ""  # Default light map file
 
@@ -155,6 +160,8 @@ try:
     rapid_mode = config["rapid_mode"]
     light_map_file = config["light_map_file"]
     design_mode = config["design_mode"]
+    animation_quick_load_slots = config["animation_quick_load_slots"]
+    script_quick_load_slots = config["script_quick_load_slots"]
 except FileNotFoundError:
     light_server = ""
     light_server_port = 1883
@@ -173,6 +180,15 @@ except KeyError:
     messagebox.showerror(
         "Error", "The config file is corrupted and has been deleted. Please reconfigure the program.")
 
+# Check quick load slots integrity
+if len(animation_quick_load_slots) != 5:
+    messagebox.showerror(
+        "Error", "The animation quick load slots are corrupted and have been reset.")
+    animation_quick_load_slots = [None]*5
+if len(script_quick_load_slots) != 5:
+    messagebox.showerror(
+        "Error", "The script quick load slots are corrupted and have been reset.")
+    script_quick_load_slots = [None]*5
 
 # Create a tkinter gui window ask for the light server ip and port and whether to enable rapid response mode
 root = tk.Tk()
@@ -203,7 +219,8 @@ def submit_config():
     # Save the config to config.json
     with open("config.json", "w") as file:
         json.dump({"light_server": light_server, "light_server_port": light_server_port,
-                  "rapid_mode": rapid_mode, "light_map_file": light_map_file, "design_mode": design_mode}, file)
+                  "rapid_mode": rapid_mode, "light_map_file": light_map_file, "design_mode": design_mode,
+                  "script_quick_load_slots": script_quick_load_slots, "animation_quick_load_slots": animation_quick_load_slots}, file)
     root.destroy()
 
 
@@ -979,7 +996,8 @@ def new_animation():
     slider.set(0)  # Set the slider value to the first frame
     render_frame_at_index(0)
 
-def run_script():
+
+def run_script(filename: str):
     def import_from_file(module_name, file_path):
         spec = importlib_util.spec_from_file_location(module_name, file_path)
         module = importlib_util.module_from_spec(spec)
@@ -987,7 +1005,7 @@ def run_script():
         return module
 
     global playback_active
-    filename = filedialog.askopenfilename(filetypes=[("Python Files", "*.py")])
+
     if filename:
         try:
             print(filename.split(".")[0])
@@ -1131,6 +1149,10 @@ def generate_template_script():
 
 root.bind("<Configure>", resize_elements)
 
+def run_script_prompt():
+    filename = filedialog.askopenfilename(filetypes=[("Python Files", "*.py")])
+    run_script(filename)
+
 # Create a menu bar
 menu_bar = tk.Menu(root)
 root.config(menu=menu_bar)
@@ -1141,7 +1163,7 @@ file_menu.add_command(label="New Animation", command=new_animation)
 file_menu.add_command(label="Save Animation", command=save_animation)
 file_menu.add_command(label="Load Animation", command=load_animation)
 file_menu.add_separator()
-file_menu.add_command(label="Run Script", command=run_script)
+file_menu.add_command(label="Run Script", command=run_script_prompt)
 file_menu.add_command(label="Generate Template Script", command=generate_template_script)
 file_menu.add_separator()
 file_menu.add_command(label="Exit", command=root.quit)
@@ -1157,6 +1179,121 @@ controller_menu.add_separator()
 controller_menu.add_command(
     label="Generate Light Map", command=open_generate_light_map_template_window)
 menu_bar.add_cascade(label="Controllers", menu=controller_menu)
+
+def load_animation_at_slot(slot: int):
+    global frames
+    filename = animation_quick_load_slots[slot-1]
+    if (filename == None):
+        save_animation_at_slot(slot)
+        return
+    if filename:
+        try:
+            with open(filename, "r") as file:
+                temp_frames = json.load(file)
+                # Check if the animation is empty
+                if len(temp_frames) == 0:
+                    raise Exception("Animation cannot be empty.")
+                # Check if the animation has the same dimensions as the light map
+                if len(temp_frames[0]) != len(light_grid.light_map) or len(temp_frames[0][0]) != len(light_grid.light_map[0]):
+                    raise Exception(
+                        "The animation must have the same dimensions as the light map.")
+                # Check the animation for invalid frames
+                for frame in temp_frames:
+                    for row in frame:
+                        for light in row:
+                            # Check if the light is a boolean value or an integer value of 0 or 1
+                            if type(light) != bool and type(light) != int or(type(light) == int and (light != 0 and light != 1)):
+                                raise Exception(
+                                    "The animation must only contain boolean values.")
+                frames = temp_frames
+            slider.config(to=len(frames)-1)  # Update the slider range
+            slider.set(0)  # Set the slider value to the first frame
+            # Update quick load menu
+            quick_run_menu.entryconfig(slot-1, label=f"Animation Slot {slot}: {filename.split('/')[-1]}")
+        except FileNotFoundError:
+            messagebox.showerror(
+                "File Not Found", f"The file {filename} could not be found.")
+        except Exception as e:
+            messagebox.showerror("Load Error", f"{e}\nAre you sure this is a valid animation file?")
+        render_frame_at_index(0)
+
+# Put script filenames in the quick load menu
+def save_script_at_slot(slot: int):
+    global script_quick_load_slots
+    # Ask the user where the script is located
+    filename = filedialog.askopenfilename(filetypes=[("Python Files", "*.py")])
+    if filename:
+        script_quick_load_slots[slot-1] = filename
+        quick_run_menu.entryconfig(slot+5, label=f"Script Slot {slot}: {filename.split('/')[-1]}")
+
+# Put animation filenames in the quick load menu
+def save_animation_at_slot(slot: int):
+    global animation_quick_load_slots
+    # Ask the user where the animation is located
+    filename = filedialog.askopenfilename(filetypes=[("JSON Files", "*.json")])
+    if filename:
+        animation_quick_load_slots[slot-1] = filename
+        quick_run_menu.entryconfig(slot-1, label=f"Animation Slot {slot}: {filename.split('/')[-1]}")
+
+# Run the script at the specified slot if it is not empty
+def load_script_at_slot(slot: int):
+    filename = script_quick_load_slots[slot-1]
+    print(filename)
+    if (filename == None):
+        save_script_at_slot(slot)
+        return
+    run_script(filename)
+
+def clear_animation_slot(slot: int):
+    global animation_quick_load_slots
+    animation_quick_load_slots[slot-1] = None
+    quick_run_menu.entryconfig(slot-1, label=f"Animation Slot {slot}: Empty")
+
+def clear_script_slot(slot: int):
+    global script_quick_load_slots
+    script_quick_load_slots[slot-1] = None
+    quick_run_menu.entryconfig(slot+5, label=f"Script Slot {slot}: Empty")
+
+# Create the Quick Run menu
+quick_run_menu = tk.Menu(menu_bar, tearoff=False)
+quick_run_menu.add_command(label="Animation Slot 1: Empty", command=lambda: load_animation_at_slot(1))
+quick_run_menu.add_command(label="Animation Slot 2: Empty", command=lambda: load_animation_at_slot(2))
+quick_run_menu.add_command(label="Animation Slot 3: Empty", command=lambda: load_animation_at_slot(3))
+quick_run_menu.add_command(label="Animation Slot 4: Empty", command=lambda: load_animation_at_slot(4))
+quick_run_menu.add_command(label="Animation Slot 5: Empty", command=lambda: load_animation_at_slot(5))
+quick_run_menu.add_separator()
+quick_run_menu.add_command(label="Script Slot 1: Empty", command=lambda: load_script_at_slot(1))
+quick_run_menu.add_command(label="Script Slot 2: Empty", command=lambda: load_script_at_slot(2))
+quick_run_menu.add_command(label="Script Slot 3: Empty", command=lambda: load_script_at_slot(3))
+quick_run_menu.add_command(label="Script Slot 4: Empty", command=lambda: load_script_at_slot(4))
+quick_run_menu.add_command(label="Script Slot 5: Empty", command=lambda: load_script_at_slot(5))
+quick_run_menu.add_separator()
+# Create a submenu to house the clear menu
+clear_menu = tk.Menu(quick_run_menu, tearoff=False)
+clear_menu.add_command(label="Animation Slot 1", command=lambda: clear_animation_slot(1))
+clear_menu.add_command(label="Animation Slot 2", command=lambda: clear_animation_slot(2))
+clear_menu.add_command(label="Animation Slot 3", command=lambda: clear_animation_slot(3))
+clear_menu.add_command(label="Animation Slot 4", command=lambda: clear_animation_slot(4))
+clear_menu.add_command(label="Animation Slot 5", command=lambda: clear_animation_slot(5))
+clear_menu.add_separator()
+clear_menu.add_command(label="Script Slot 1", command=lambda: clear_script_slot(1))
+clear_menu.add_command(label="Script Slot 2", command=lambda: clear_script_slot(2))
+clear_menu.add_command(label="Script Slot 3", command=lambda: clear_script_slot(3))
+clear_menu.add_command(label="Script Slot 4", command=lambda: clear_script_slot(4))
+clear_menu.add_command(label="Script Slot 5", command=lambda: clear_script_slot(5))
+clear_menu.add_separator()
+clear_menu.add_command(label="Clear All Animation Slots", command=lambda: [clear_animation_slot(i) for i in range(1, 6)])
+clear_menu.add_command(label="Clear All Script Slots", command=lambda: [clear_script_slot(i) for i in range(1, 6)])
+clear_menu.add_command(label="Clear All", command=lambda: [clear_animation_slot(i) for i in range(1, 6)] + [clear_script_slot(i) for i in range(1, 6)])
+quick_run_menu.add_cascade(label="Clear Slot", menu=clear_menu)
+menu_bar.add_cascade(label="Quick Load", menu=quick_run_menu)
+
+# Populate the quick run menu with the filenames in the quick load slots
+for i in range(5):
+    if animation_quick_load_slots[i] != None:
+        quick_run_menu.entryconfig(i, label=f"Animation Slot {i+1}: {animation_quick_load_slots[i].split('/')[-1]}")
+    if script_quick_load_slots[i] != None:
+        quick_run_menu.entryconfig(i+6, label=f"Script Slot {i+1}: {script_quick_load_slots[i].split('/')[-1]}")
 
 def open_about_popup():
     about_popup = tk.Toplevel(root)
@@ -1246,6 +1383,12 @@ root.bind("<Right>", handle_right_arrow)
 
 
 root.mainloop()
+
+# Write Quick Load data to file
+with open("config.json", "w") as file:
+    json.dump({"light_server": light_server, "light_server_port": light_server_port,
+                "rapid_mode": rapid_mode, "light_map_file": light_map_file, "design_mode": design_mode,
+                "script_quick_load_slots": script_quick_load_slots, "animation_quick_load_slots": animation_quick_load_slots}, file)
 
 # Take all connected controllers out of rapid response mode
 if rapid_mode:
