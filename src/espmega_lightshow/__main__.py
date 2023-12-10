@@ -139,6 +139,7 @@ global light_grid
 global design_mode
 global animation_quick_load_slots
 global script_quick_load_slots
+global configured
 
 animation_quick_load_slots = [None]*5
 script_quick_load_slots = [None]*5
@@ -197,12 +198,14 @@ root.iconbitmap(icon_file)
 root.geometry("600x360")
 root.resizable(False, False)
 
+configured = False
 
 def submit_config():
     global light_server
     global light_server_port
     global rapid_mode
     global design_mode
+    global configured
     light_server = light_server_entry.get()
     light_server_port = int(light_server_port_entry.get())
     rapid_mode = rapid_mode_var.get()
@@ -221,6 +224,7 @@ def submit_config():
         json.dump({"light_server": light_server, "light_server_port": light_server_port,
                   "rapid_mode": rapid_mode, "light_map_file": light_map_file, "design_mode": design_mode,
                   "script_quick_load_slots": script_quick_load_slots, "animation_quick_load_slots": animation_quick_load_slots}, file)
+    configured = True
     root.destroy()
 
 
@@ -333,6 +337,10 @@ design_mode_var.set(design_mode)
 
 # Start the tkinter main loop
 root.mainloop()
+
+# Exit the program if the user closes the window
+if not configured:
+    sys.exit(0)
 
 # Light state constants
 LIGHT_DISABLED = -1
