@@ -1046,6 +1046,12 @@ def run_script(filename: str):
     pause_button.config(state="disabled")
     stop_button.config(state="disabled")
     repeat_toggle.config(state="disabled")
+    # Lock Run Script button
+    file_menu.entryconfig(4, state="disabled")
+    # Lock All Quick Load Menu
+    for i in range(5):
+        quick_run_menu.entryconfig(i, state="disabled")
+        quick_run_menu.entryconfig(i+7, state="disabled")
     playback_status_label.config(text="Status: Scripted")
     
     # Create a new window to display the script controls
@@ -1133,6 +1139,13 @@ def run_script(filename: str):
     pause_button.config(state="normal")
     stop_button.config(state="normal")
     repeat_toggle.config(state="normal")
+    # Unlock Run Script button
+    file_menu.entryconfig(4, state="normal")
+    # Unlock All Quick Load Menu
+    quick_run_menu.entryconfig(0, state="normal")
+    for i in range(5):
+        quick_run_menu.entryconfig(i, state="normal")
+        quick_run_menu.entryconfig(i+7, state="normal")
     playback_status_label.config(text="Status: Stopped")
 render_frame_at_index(0)
 
@@ -1216,6 +1229,8 @@ def load_animation_at_slot(slot: int):
         except Exception as e:
             messagebox.showerror("Load Error", f"{e}\nAre you sure this is a valid animation file?")
         render_frame_at_index(0)
+        if (instant_playback_var.get()):
+            play_frames()
 
 # Put script filenames in the quick load menu
 def save_script_at_slot(slot: int):
@@ -1254,6 +1269,8 @@ def clear_script_slot(slot: int):
     script_quick_load_slots[slot-1] = None
     quick_run_menu.entryconfig(slot+5, label=f"Script Slot {slot}: Empty")
 
+instant_playback_var = tk.BooleanVar()
+
 # Create the Quick Run menu
 quick_run_menu = tk.Menu(menu_bar, tearoff=False)
 quick_run_menu.add_command(label="Animation Slot 1: Empty", command=lambda: load_animation_at_slot(1))
@@ -1261,6 +1278,7 @@ quick_run_menu.add_command(label="Animation Slot 2: Empty", command=lambda: load
 quick_run_menu.add_command(label="Animation Slot 3: Empty", command=lambda: load_animation_at_slot(3))
 quick_run_menu.add_command(label="Animation Slot 4: Empty", command=lambda: load_animation_at_slot(4))
 quick_run_menu.add_command(label="Animation Slot 5: Empty", command=lambda: load_animation_at_slot(5))
+quick_run_menu.add_checkbutton(label="Instant Playback (Disabled)", variable=instant_playback_var, command=lambda: quick_run_menu.entryconfig(5,label="Instant Playback (Enabled)" if instant_playback_var.get() else "Instant Playback (Disabled)"))
 quick_run_menu.add_separator()
 quick_run_menu.add_command(label="Script Slot 1: Empty", command=lambda: load_script_at_slot(1))
 quick_run_menu.add_command(label="Script Slot 2: Empty", command=lambda: load_script_at_slot(2))
@@ -1293,7 +1311,7 @@ for i in range(5):
     if animation_quick_load_slots[i] != None:
         quick_run_menu.entryconfig(i, label=f"Animation Slot {i+1}: {animation_quick_load_slots[i].split('/')[-1]}")
     if script_quick_load_slots[i] != None:
-        quick_run_menu.entryconfig(i+6, label=f"Script Slot {i+1}: {script_quick_load_slots[i].split('/')[-1]}")
+        quick_run_menu.entryconfig(i+7, label=f"Script Slot {i+1}: {script_quick_load_slots[i].split('/')[-1]}")
 
 def open_about_popup():
     about_popup = tk.Toplevel(root)

@@ -6,7 +6,7 @@ class CustomUserScript(UserScript):
         for row in range(self.rows):
             for column in range(self.columns):
                 # Calculate a value based on the current time and the position of the light
-                value = math.sin(current_time + column / self.columns)
+                value = math.sin(self.frame_count/5 + column / self.columns)
                 
                 # Determine the state of the light based on the calculated value
                 state = value > 0
