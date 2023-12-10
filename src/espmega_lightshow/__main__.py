@@ -427,6 +427,8 @@ def get_tile_state(row: int, column: int):
 
 
 def change_color(event):
+    global script_active
+    global playback_active
     if script_active or playback_active:
         return
     row = event.widget.grid_info()["row"]
@@ -586,6 +588,8 @@ def render_frame(frame: list):
 
 
 def change_light_config(event):
+    global script_active
+    global playback_active
     if script_active or playback_active:
         return
     row = event.widget.grid_info()["row"]
@@ -1419,6 +1423,7 @@ def open_about_popup():
 help_menu = tk.Menu(menu_bar, tearoff=False)
 help_menu.add_command(label="About", command=open_about_popup)
 help_menu.add_command(label="Documentation", command=lambda: webbrowser.open("https://github.com/SiwatINC/espmega-lightshow/wiki"))
+help_menu.add_command(label="Check for Updates", command=check_for_updates)
 menu_bar.add_cascade(label="Help", menu=help_menu)
 
 
