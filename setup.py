@@ -6,7 +6,7 @@ def readme():
 
 setup(
     name='espmega_lightshow',
-    version='3.4',
+    version='3.5',
     license='Apache 2.0',
     author="Siwat Sirichai",
     author_email='siwat@siwatinc.com',

@@ -19,6 +19,7 @@ import shutil
 import traceback
 import webbrowser
 import subprocess
+import re
 
 @dataclass
 class PhysicalLightEntity:
@@ -1430,12 +1431,20 @@ def check_for_updates():
         messagebox.showerror("Update Error", f"An error occured while checking for updates.\n{stderr.decode('utf-8')}")
     else:
         return_message = stdout.decode("utf-8")
-        print(return_message)
+        # Get current version by running pip show
+        process = subprocess.Popen(["pip", "show", "espmega-lightshow"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        # Check if pip returned an error
+        if process.returncode != 0:
+            messagebox.showerror("Update Error", f"An error occured while checking for updates.\n{stderr.decode('utf-8')}")
+            return
+        # Extract the version number from the output
+        current_version = re.search(r"Version: (.*)", stdout.decode("utf-8")).group(1)
         # Check if pip returned a message
-        if ("Requirement already satisfied: espmega-lightshow" in return_message):
-            messagebox.showinfo("Update", "No updates found.")
+        if ("Collecting espmega-lightshow" in return_message):
+            messagebox.showinfo("Update", f"Updated to version {current_version}\nPlease restart the program to apply the update.")
         else:
-            messagebox.showinfo("Update", "Update found.\nPlease restart the program to apply the update.")
+            messagebox.showinfo("Update", f"No updates found\nYou are already on the latest version ({current_version}).")
 
 # Create the help menu
 help_menu = tk.Menu(menu_bar, tearoff=False)
