@@ -10,6 +10,9 @@ pythonPath=$(which python3)
 # Get site-packages path
 pythonRootPath=$(python3 -c "import sysconfig; print(sysconfig.get_paths()['purelib'])")
 
+# Create esp_mega_lightshow folder in the user's home directory if it doesn't exist
+mkdir -p "$HOME/.espmega_lightshow"
+
 # Create start menu shortcut
 targetFile="$HOME/.local/share/applications/ESPMega Lightshow.desktop"
 echo "[Desktop Entry]
@@ -18,6 +21,7 @@ Type=Application
 Name=ESPMega Lightshow
 Exec=$pythonPath -m espmega_lightshow
 Icon=$pythonRootPath/espmega_lightshow/icon.ico
+Path=$HOME/.espmega_lightshow
 Terminal=false" > "$targetFile"
 
 # Add alias to .bashrc

@@ -16,12 +16,20 @@ pip3 install --upgrade espmega_lightshow
 # Get python.exe path
 $pythonPath = (Get-Command pythonw).Source
 
+# Create espmega_lightshow folder in user's home directory
+$espmegaLightshowPath = "$env:USERPROFILE\espmega_lightshow"
+if (-not (Test-Path $espmegaLightshowPath)) {
+    New-Item -ItemType Directory -Force -Path $espmegaLightshowPath
+}
+
 # Create desktop shortcut
 $targetFile = "$env:USERPROFILE\Desktop\ESPMega Lightshow.lnk"
 $wshshell = New-Object -ComObject WScript.Shell
 $shortcut = $wshshell.CreateShortcut($targetFile)
 $shortcut.TargetPath = $pythonPath
 $shortcut.Arguments = "-m espmega_lightshow"
+# Set the working directory to the espmega_lightshow folder in the user's home directory
+$shortcut.WorkingDirectory = $espmegaLightshowPath
 # Get Python base path
 $pythonRootPath = (Get-Command python).Source | Split-Path -Parent
 # Set the icon to icon.ico in the same directory as this python script
@@ -34,6 +42,8 @@ $wshshell = New-Object -ComObject WScript.Shell
 $shortcut = $wshshell.CreateShortcut($targetFile)
 $shortcut.TargetPath = $pythonPath
 $shortcut.Arguments = "-m espmega_lightshow"
+# Set the working directory to the espmega_lightshow folder in the user's home directory
+$shortcut.WorkingDirectory = $espmegaLightshowPath
 # Set the icon to icon.ico in the same directory as this python script
 $shortcut.IconLocation = $pythonRootPath + "\lib\site-packages\espmega_lightshow\icon.ico"
 $shortcut.Save()
