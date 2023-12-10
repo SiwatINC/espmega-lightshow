@@ -1239,7 +1239,7 @@ def save_script_at_slot(slot: int):
     filename = filedialog.askopenfilename(filetypes=[("Python Files", "*.py")])
     if filename:
         script_quick_load_slots[slot-1] = filename
-        quick_run_menu.entryconfig(slot+5, label=f"Script Slot {slot}: {filename.split('/')[-1]}")
+        quick_run_menu.entryconfig(slot+6, label=f"Script Slot {slot}: {filename.split('/')[-1]}")
 
 # Put animation filenames in the quick load menu
 def save_animation_at_slot(slot: int):
@@ -1267,7 +1267,7 @@ def clear_animation_slot(slot: int):
 def clear_script_slot(slot: int):
     global script_quick_load_slots
     script_quick_load_slots[slot-1] = None
-    quick_run_menu.entryconfig(slot+5, label=f"Script Slot {slot}: Empty")
+    quick_run_menu.entryconfig(slot+6, label=f"Script Slot {slot}: Empty")
 
 instant_playback_var = tk.BooleanVar()
 
