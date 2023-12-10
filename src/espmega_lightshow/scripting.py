@@ -1,5 +1,5 @@
 class UserScript:
-    def __init__(self, rows: int, columns: int, set_tile_state, get_tile_state):
+    def __init__(self, rows: int, columns: int, set_tile_state, get_tile_state, log):
         self.rows = rows
         self.columns = columns
         # set_element_state(row, column, state) is a function that sets the state of a light at row, column to state
@@ -9,6 +9,7 @@ class UserScript:
         self.active = True
         self.executing = False
         self.frame_count = 0
+        self.log = log
         # Clear the board
         for row in range(rows):
             for column in range(columns):

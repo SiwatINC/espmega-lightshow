@@ -8,4 +8,6 @@ class CustomUserScript (UserScript):
         # You can use current_time to get the current time elapsed in seconds
         # You can use self.frame_count to get the number of frames that have passed
         # You can use self.log(message) to log a message to the log console
-        pass
+
+        # This script is a test script that will log a message every frame
+        self.log("Hello, world!")

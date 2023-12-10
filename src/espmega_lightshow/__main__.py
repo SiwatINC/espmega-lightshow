@@ -139,6 +139,7 @@ global light_grid
 global design_mode
 global animation_quick_load_slots
 global script_quick_load_slots
+global script_active
 global configured
 
 animation_quick_load_slots = [None]*5
@@ -426,10 +427,11 @@ def get_tile_state(row: int, column: int):
 
 
 def change_color(event):
-    if not playback_active:
-        row = event.widget.grid_info()["row"]
-        column = event.widget.grid_info()["column"]
-        set_tile_state(row, column, not get_tile_state(row, column))
+    if script_active or playback_active:
+        return
+    row = event.widget.grid_info()["row"]
+    column = event.widget.grid_info()["column"]
+    set_tile_state(row, column, not get_tile_state(row, column))
 
 
 def add_frame():
@@ -584,6 +586,8 @@ def render_frame(frame: list):
 
 
 def change_light_config(event):
+    if script_active or playback_active:
+        return
     row = event.widget.grid_info()["row"]
     column = event.widget.grid_info()["column"]
     physical_light = light_grid.get_physical_light(row, column)
@@ -1013,10 +1017,11 @@ def run_script(filename: str):
         return module
 
     global playback_active
+    global script_active
 
     if filename:
         try:
-            print(filename.split(".")[0])
+            print(f"Loaded : {filename.split(".")[0]}")
             CustomUserScript = import_from_file(filename.split(".")[0], filename).CustomUserScript
         except FileNotFoundError:
             messagebox.showerror(
@@ -1034,8 +1039,20 @@ def run_script(filename: str):
         messagebox.showerror("Script Error", "The class CustomUserScript must be a subclass of UserScript.")
         return
 
+    def logger_func(message: any):
+        print(message)
+        message = str(message)
+        # Add a timestamp and frame number to the message, note that the timestamp is the time since the script started
+        message = f"[{script.frame_count}, {perf_counter() - begin_time:.2f}s] {message}"
+        # Add the message to the textbox
+        script_output_textbox.config(state="normal")
+        script_output_textbox.insert(tk.END, message + "\n")
+        script_output_textbox.see(tk.END)
+        script_output_textbox.config(state="disabled")
+        root.update()
+
     # Instantiate the class
-    script = CustomUserScript(rows, columns, set_tile_state, get_tile_state)
+    script = CustomUserScript(rows, columns, set_tile_state, get_tile_state, logger_func)
 
     # Stop Playback if it is active
     if playback_active:
@@ -1061,36 +1078,85 @@ def run_script(filename: str):
         quick_run_menu.entryconfig(i, state="disabled")
         quick_run_menu.entryconfig(i+7, state="disabled")
     playback_status_label.config(text="Status: Scripted")
-    
+
+    script_active = True
+
     # Create a new window to display the script controls
     script_controls_window = tk.Toplevel(root)
     script_controls_window.title("Script Runner")
     script_controls_window.iconbitmap(icon_file)
-    script_controls_window.geometry("250x130")
-    script_controls_window.resizable(False, False)
+    script_controls_window.geometry("500x130")
+
+    # Set minimum size
+    script_controls_window.minsize(500, 500)
     
+    # Create the top information frame
+    top_frame = ttk.Frame(script_controls_window)
+    top_frame.pack(pady=5)
+
     # Add a label to display the script name
-    script_name_label = ttk.Label(script_controls_window, text=f"Script: {filename.split('/')[-1]}")
+    script_name_label = ttk.Label(top_frame, text=f"Script: {filename.split('/')[-1]}")
     script_name_label.pack()
 
     # Add a label to display the script status
-    script_status_label = ttk.Label(script_controls_window, text="Status: Running")
+    script_status_label = ttk.Label(top_frame, text="Status: Running")
     script_status_label.pack()
 
     # Add a label to display the current frame number
-    script_frame_label = ttk.Label(script_controls_window, text="Frame: 0")
+    script_frame_label = ttk.Label(top_frame, text="Frame: 0")
     script_frame_label.pack()
 
     # Add a label to display the current time
-    script_time_label = ttk.Label(script_controls_window, text="Time Elapsed: 0")
+    script_time_label = ttk.Label(top_frame, text="Time Elapsed: 0")
     script_time_label.pack()
+
+    # Add a frame to hold the script output textbox
+    script_output_frame = ttk.Frame(script_controls_window)
+    script_output_frame.pack()
+
+    # Add a textbox to display the script output
+    script_output_textbox = tk.Text(script_output_frame)
+
+    # # Disable editing
+    script_output_textbox.config(state="disabled")
+    # Span the textbox across the entire frame
+    script_output_textbox.pack(fill="both", expand=True)
 
     def stop_script():
         script.active = False
 
+    def restart_script():
+        script.active = False
+        start_time = perf_counter()
+        while script.executing:
+            if perf_counter() - start_time >= 15000:
+                messagebox.showerror("Script Error", "The script is taking too long to stop.\nProgram will now restart to prevent the program from freezing.")
+                restart()
+            root.update()
+            root.update_idletasks()
+        script_controls_window.destroy()
+        run_script(filename)
+
+    # Create a buttom frame to hold the controls
+    buttom_frame = ttk.Frame(script_controls_window)
+
+    # Add a button to restart the script
+    script_restart_button = ttk.Button(buttom_frame, text="Restart", command=restart_script)
+    script_restart_button.pack(pady=5)
+
     # Add a stop button to stop the script
-    script_stop_button = ttk.Button(script_controls_window, text="Stop", command=stop_script)
+    script_stop_button = ttk.Button(buttom_frame, text="Stop", command=stop_script)
     script_stop_button.pack(pady=5)
+
+    # Pack the buttom frame
+    buttom_frame.pack()
+
+    def on_resize(event):
+        # Resize the textbox to fit the window, note that since only the height is changed, the width does not need to be changed
+        script_output_frame.config(height=script_controls_window.winfo_height() - top_frame.winfo_height() - buttom_frame.winfo_height()-20, width=script_controls_window.winfo_width()-20)
+        root.update()
+    script_controls_window.bind("<Configure>", on_resize)
+
     start_time = perf_counter()
     begin_time = perf_counter()
     ignore_execution_flag = False
@@ -1155,6 +1221,7 @@ def run_script(filename: str):
         quick_run_menu.entryconfig(i, state="normal")
         quick_run_menu.entryconfig(i+7, state="normal")
     playback_status_label.config(text="Status: Stopped")
+    script_active = False
 render_frame_at_index(0)
 
 def generate_template_script():
@@ -1169,6 +1236,7 @@ def generate_template_script():
             messagebox.showerror("Save Error", f"{e}")
 
 root.bind("<Configure>", resize_elements)
+
 
 def run_script_prompt():
     filename = filedialog.askopenfilename(filetypes=[("Python Files", "*.py")])
