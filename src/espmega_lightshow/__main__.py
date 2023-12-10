@@ -146,6 +146,7 @@ global configured
 
 animation_quick_load_slots = [None]*5
 script_quick_load_slots = [None]*5
+script_active = False
 
 light_map_file = ""  # Default light map file
 
