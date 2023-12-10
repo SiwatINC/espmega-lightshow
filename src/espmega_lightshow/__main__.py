@@ -18,6 +18,7 @@ from espmega_lightshow.scripting import UserScript
 import shutil
 import traceback
 import webbrowser
+import subprocess
 
 @dataclass
 class PhysicalLightEntity:
@@ -1418,6 +1419,23 @@ def open_about_popup():
     # Create a label for the company name
     company_label = ttk.Label(about_popup, text="SIWAT SYSTEM 2023")
     company_label.pack()
+
+# Check for updates using pip
+def check_for_updates():
+    # Run pip in a subprocess
+    process = subprocess.Popen(["pip", "install", "--upgrade", "espmega-lightshow"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+    # Check if pip returned an error
+    if process.returncode != 0:
+        messagebox.showerror("Update Error", f"An error occured while checking for updates.\n{stderr.decode('utf-8')}")
+    else:
+        return_message = stdout.decode("utf-8")
+        print(return_message)
+        # Check if pip returned a message
+        if ("Requirement already satisfied: espmega-lightshow" in return_message):
+            messagebox.showinfo("Update", "No updates found.")
+        else:
+            messagebox.showinfo("Update", "Update found.\nPlease restart the program to apply the update.")
 
 # Create the help menu
 help_menu = tk.Menu(menu_bar, tearoff=False)
