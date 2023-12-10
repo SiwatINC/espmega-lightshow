@@ -47,3 +47,19 @@ $shortcut.WorkingDirectory = $espmegaLightshowPath
 # Set the icon to icon.ico in the same directory as this python script
 $shortcut.IconLocation = $pythonRootPath + "\lib\site-packages\espmega_lightshow\icon.ico"
 $shortcut.Save()
+
+# Get python.exe path
+$pythonDbgPath = (Get-Command python).Source
+
+# Create start menu shortcut to launch the program in debug mode, debug mode runs on python.exe instead of pythonw.exe
+$targetFile = "$env:USERPROFILE\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\ESPMega Lightshow (Debug).lnk"
+$wshshell = New-Object -ComObject WScript.Shell
+$shortcut = $wshshell.CreateShortcut($targetFile)
+$shortcut.TargetPath = $pythonDbgPath
+$shortcut.Arguments = "-m espmega_lightshow"
+# Set the working directory to the espmega_lightshow folder in the user's home directory
+$shortcut.WorkingDirectory = $espmegaLightshowPath
+# Set the icon to icon.ico in the same directory as this python script
+$shortcut.IconLocation = $pythonRootPath + "\lib\site-packages\espmega_lightshow\icon.ico"
+$shortcut.Save()
+
