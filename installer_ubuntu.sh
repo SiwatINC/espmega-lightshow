@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Install Python3 and espmega_lightshow
-sudo apt-get install -y python3 python3-pip
+sudo apt-get install -y python3 python3-pip python3-tk
 pip3 install --upgrade espmega_lightshow
 
 # Get python3 path

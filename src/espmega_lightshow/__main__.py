@@ -359,7 +359,7 @@ COLOR_ON_OFFLINE = "red"
 ENABLE_PHYSICAL_SYNCRONIZATION = True
 
 MIN_BPM = 20
-MAX_BPM = 200
+MAX_BPM = 600
 
 
 def state_to_color(state: int):
@@ -1028,7 +1028,7 @@ def run_script(filename: str):
 
     if filename:
         try:
-            print(f"Loaded : {filename.split(".")[0]}")
+            print(f'Loaded : {filename.split(".")[0]}')
             CustomUserScript = import_from_file(filename.split(".")[0], filename).CustomUserScript
         except FileNotFoundError:
             messagebox.showerror(
