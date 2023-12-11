@@ -14,7 +14,7 @@ pythonRootPath=$(python3 -c "import sysconfig; print(sysconfig.get_paths()['pure
 mkdir -p "$HOME/.espmega_lightshow"
 
 # Create start menu shortcut
-targetFile="$HOME/.local/share/applications/ESPMega Lightshow.desktop"
+targetFile="$HOME/.local/share/applications/siwatinc-espmega_lightshow.desktop"
 echo "[Desktop Entry]
 Version=1.0
 Type=Application
