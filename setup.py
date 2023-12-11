@@ -21,7 +21,8 @@ setup(
     url='https://github.com/SiwatINC/espmega-lightshow',
     keywords='light mqtt espmega',
     install_requires=[
-          'espmega'
+          'espmega',
+          'pillow'
       ],
 
 )
