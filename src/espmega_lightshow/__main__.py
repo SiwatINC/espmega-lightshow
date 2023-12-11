@@ -63,7 +63,8 @@ class LightGrid:
         self.columns = len(light_map[0])
         self.lights = [None] * self.rows * self.columns
         self.controllers = {}  # Dictionary to store existing controllers
-
+        self.failed_controllers  = {}  # Dictionary to store failed controllers
+        self.connected_controllers = {}  # Dictionary to store connected controllers
         for row_index, row in enumerate(light_map):
             for column_index, light in enumerate(row):
                 if light is None:
@@ -75,12 +76,15 @@ class LightGrid:
                     try:
                         if base_topic in self.controllers:
                             controller = self.controllers[base_topic]
+                        elif base_topic in self.failed_controllers:
+                            self.assign_physical_light(row_index, column_index, None)
                         else:
                             if not self.design_mode:
                                 controller = ESPMega_standalone(
                                     base_topic, light_server, light_server_port)
                                 if rapid_mode:
                                     controller.enable_rapid_response_mode()
+                                self.connected_controllers[base_topic] = controller
                             else:
                                 controller = None
                             self.controllers[base_topic] = controller
@@ -88,10 +92,15 @@ class LightGrid:
                             row_index, column_index, controller, pwm_id)
                         self.set_light_state(row_index, column_index, False)
                     except Exception as e:
-                        messagebox.showerror(
-                            "Controller Error", f'The controller at {base_topic} is throwing an error:\n{e}\n\nPlease note that the controller must be connected to the network and running the ESPMega firmware.\n\nYou may continue without this light, but it will not be able to be controlled.')
+                        self.failed_controllers[base_topic] = e
                         self.assign_physical_light(
                             row_index, column_index, None)
+        # Summarize the failed controllers
+        if len(self.failed_controllers) > 0:
+            error_message = "The following controllers failed to connect:\n"
+            for base_topic, error in self.failed_controllers.items():
+                error_message += f"{base_topic}: {error}\n"
+            messagebox.showerror("Controller Error", error_message+"Please note that the controllers must be connected to the network and running the ESPMega firmware.\n\nYou may continue without these lights, but they will not be able to be controlled.")
 
     def read_light_map_from_file(self, filename: str):
         try:
