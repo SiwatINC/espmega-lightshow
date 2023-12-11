@@ -209,8 +209,8 @@ if len(script_quick_load_slots) != 5:
 # Create a tkinter gui window ask for the light server ip and port and whether to enable rapid response mode
 root = tk.Tk()
 root.title("ELS Pre-Flight")
-icon_image = ImageTk.PhotoImage(icon_image)
-root.wm_iconphoto(True, icon_image)
+icon = ImageTk.PhotoImage(icon_image)
+root.wm_iconphoto(True, icon)
 root.geometry("600x360")
 root.resizable(False, False)
 
@@ -305,7 +305,8 @@ submit_button.pack(pady=5)
 def open_generate_light_map_template_window():
     light_map_generator_window = tk.Toplevel(root)
     light_map_generator_window.title("Generate Map")
-    light_map_generator_window.wm_iconphoto(True, icon_image)
+    icon = ImageTk.PhotoImage(icon_image)
+    light_map_generator_window.wm_iconphoto(True, icon)
     light_map_generator_window.geometry("250x130")
     light_map_generator_window.resizable(False, False)
 
@@ -613,7 +614,8 @@ def change_light_config(event):
     light_config_window = tk.Toplevel(root)
     light_config_window.geometry("250x190")
     light_config_window.title("Light Config")
-    light_config_window.wm_iconphoto(True, icon_image)
+    icon = ImageTk.PhotoImage(icon_image)
+    light_config_window.wm_iconphoto(True, icon)
     light_config_window.resizable(False, False)
 
     # Define variables for the disable checkbox
@@ -755,7 +757,8 @@ frames = [[[0]*light_grid.columns]*light_grid.rows]
 root = tk.Tk()
 
 root.title("ESPMega Light Show")
-root.wm_iconphoto(True, icon_image)
+icon = ImageTk.PhotoImage(icon_image)
+root.wm_iconphoto(True, icon)
 
 
 # Create a label for the title
@@ -1103,7 +1106,8 @@ def run_script(filename: str):
     # Create a new window to display the script controls
     script_controls_window = tk.Toplevel(root)
     script_controls_window.title("Script Runner")
-    script_controls_window.wm_iconphoto(True, icon_image)
+    icon = ImageTk.PhotoImage(icon_image)
+    script_controls_window.wm_iconphoto(True, icon)
     script_controls_window.geometry("500x130")
 
     # Set minimum size
@@ -1411,7 +1415,8 @@ for i in range(5):
 def open_about_popup():
     about_popup = tk.Toplevel(root)
     about_popup.title("About")
-    about_popup.iconbitmap.wm_iconphoto(True, icon_image)
+    icon = ImageTk.PhotoImage(icon_image)
+    about_popup.iconbitmap.wm_iconphoto(True, icon)
     about_popup.geometry("350x110")
     about_popup.resizable(False, False)
 

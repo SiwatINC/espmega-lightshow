@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Install Python3 and espmega_lightshow
-sudo apt-get install -y python3 python3-pip python3-tk
+sudo apt-get install -y python3 python3-pip python3-tk python3-pil python3-pil.imagetk
 pip3 install --upgrade espmega_lightshow
 
 # Get python3 path
@@ -20,7 +20,7 @@ Version=1.0
 Type=Application
 Name=ESPMega Lightshow
 Exec=$pythonPath -m espmega_lightshow
-Icon=$pythonRootPath/espmega_lightshow/icon.ico
+Icon=$pythonRootPath/espmega_lightshow/logo.png
 Path=$HOME/.espmega_lightshow
 Terminal=false" > "$targetFile"
 
