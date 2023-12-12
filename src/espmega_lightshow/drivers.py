@@ -86,21 +86,27 @@ class ESPMegaLightDriver(LightDriver):
 
 
 class ESPMegaStandaloneLightDriver(ESPMegaLightDriver):
-    def __init__(self, base_topic: str,pwm_channel: int, light_server: str, light_server_port: int) -> dict:
+    def __init__(self, base_topic: str,pwm_channel: int, light_server: str, light_server_port: int, rapid_mode: bool = False) -> dict:
         self.base_topic = base_topic
         self.light_server = light_server
         self.light_server_port = light_server_port
         self.pwm_channel = pwm_channel
+        self.rapid_mode = rapid_mode
         self.state = False
         try:
             self.controller = ESPMega(
                 base_topic, light_server, light_server_port)
+            if rapid_mode:
+                self.controller.set_rapid_mode()
         except Exception as e:
+            print(e)
             self.controller = None
             self.conntected = False
             self.exception = e
         self.conntected = True
-
+    def close(self):
+        if self.conntected and rapid_mode:
+            self.controller.disable_rapid_response_mode()
     @staticmethod
     def get_driver_properties() -> dict:
         return {
