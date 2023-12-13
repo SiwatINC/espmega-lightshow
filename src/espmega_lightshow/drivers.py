@@ -128,7 +128,7 @@ class ESPMegaLightDriver(LightDriver):
             "name": "ESPMega",
             "support_brightness": False,
             "support_color": False,
-            "configuration_parameters": ["light_server", "light_server_port","base_topic", "pwm_channel"]
+            "configuration_parameters": ["light_server", "light_server_port","base_topic", "pwm_id"]
         }
 
 
@@ -161,7 +161,7 @@ class ESPMegaStandaloneLightDriver(ESPMegaLightDriver):
             "name": "ESPMega Standalone",
             "support_brightness": False,
             "support_color": False,
-            "configuration_parameters": ["light_server", "light_server_port", "pwm_channel"]
+            "configuration_parameters": ["light_server", "light_server_port", "pwm_id"]
         }
     
 # This class manage a group of ESPMegaLightDriver and ESPMegaStandaloneLightDriver

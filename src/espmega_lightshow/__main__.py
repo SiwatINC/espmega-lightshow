@@ -508,6 +508,10 @@ def render_frame(frame: list):
 
 
 def change_light_config(event):
+    # Get a list of all configuration options for each light driver
+    config_options = {"espmega": ESPMegaLightDriver.get_driver_properties()["configuration_parameters"], "homeassistant": HomeAssistantLightDriver.get_driver_properties()["configuration_parameters"]}
+    config_vars = {}
+    config_frames = {}
     global script_active
     global playback_active
     if script_active or playback_active:
@@ -519,16 +523,24 @@ def change_light_config(event):
     light_config_window.title("Light Config")
     icon = ImageTk.PhotoImage(icon_image)
     light_config_window.wm_iconphoto(True, icon)
-    
-    # Define variables for the disable checkbox
-    enable_var = tk.BooleanVar()
 
     def submit_light_config():
         global light_grid
         
-        # TODO Get the light config from the entry fields
+        physical_light_config = {}
+        driver = light_driver_var.get()
+        for config_var in config_vars[driver]:
+            physical_light_config[config_var] = config_vars[driver][config_var].get()
+        physical_light_config["driver"] = driver
 
-        # TODO Config Validation
+        # Make sure that all the required config options are filled in
+        for config_option in config_options[driver]:
+            if config_option == "driver":
+                continue
+            if physical_light_config[config_option] == "":
+                messagebox.showerror(
+                    "Error", f"Please fill in the {config_option} field.")
+                return
 
         # Update the light map
         modified_light_map = light_grid.light_map
@@ -548,58 +560,85 @@ def change_light_config(event):
         # Close the window
         light_config_window.destroy()
 
-    def checkbox_callback():
-        if enable_var.get():
-            base_topic_entry.configure(state="normal")
-            pwm_id_entry.configure(state="normal")
-        else:
-            base_topic_entry.configure(state="disabled")
-            pwm_id_entry.configure(state="disabled")
+    def get_driver_from_json():
+        return light_grid.light_map[row][column]["driver"]
 
-    position_label = tk.Label(
+    def load_config_to_entry_fields(driver):
+        # Is the driver different from the driver in the json file?
+        if driver != get_driver_from_json():
+            # If so, clear all the entry fields instead of loading the config
+            print("Driver is different, clearing entry fields")
+            for config_var in config_vars[driver]:
+                config_vars[driver][config_var].set("")
+            root.update()
+            return
+        print("Driver is the same, loading config")
+        # Load the light config that corresponds to the driver in the json file
+        light_config = light_grid.light_map[row][column]
+        # Load the config to the entry fields
+        for config_var in config_vars[driver]:
+            # Skip the driver config variable
+            if config_var == "driver":
+                continue
+            print(f"Loading {config_var} to entry field, the value is {light_config[config_var]}")
+            print(f"The entry field is {config_vars[driver][config_var]}")
+            config_vars[driver][config_var].set(
+                light_config[config_var])
+            root.update()
+
+
+    def light_driver_dropdown_callback(*args):
+        # Hide all the config frames
+        for frame in config_frames.values():
+            frame.grid_forget()
+        # Show the config frame for the selected light driver
+        driver = light_driver_var.get()
+        config_frames[driver].grid(row=2, column=0, columnspan=2)
+        # Load Config to Entry Fields
+        load_config_to_entry_fields(driver)
+
+    position_label = ttk.Label(
         light_config_window, text=f"Configuring Light at {row}, {column}")
-    position_label.pack()
+    position_label.grid(row=0, column=0, columnspan=2)
 
     # Because there are many different types of light drivers, we will use a dropdown menu to select the light driver
-    light_driver_label = tk.Label(light_config_window, text="Light Driver")
-    light_driver_label.pack()
+    light_driver_label = ttk.Label(light_config_window, text="Light Driver")
+    light_driver_label.grid(row=1, column=0)
     light_driver_var = tk.StringVar()
     light_driver_var.set("espmega")
     # Switch to the correct light driver config frame based on the selected light driver
-    def light_driver_dropdown_callback(*args):
-        if light_driver_var.get() == "espmega":
-            light_driver_config_frame_espmega.pack()
-            light_driver_config_frame_homeassistant.pack_forget()
-        elif light_driver_var.get() == "homeassistant":
-            light_driver_config_frame_homeassistant.pack()
-            light_driver_config_frame_espmega.pack_forget()
     light_driver_dropdown = tk.OptionMenu(
-        light_config_window, light_driver_var, "espmega", "homeassistant", command=light_driver_dropdown_callback)
-    light_driver_dropdown.pack()
-    # Get a list of all configuration options for each light driver
-    config_optioins = {"espmega": ESPMegaLightDriver.get_driver_properties()["configuration_parameters"], "homeassistant": HomeAssistantLightDriver.get_driver_properties()["configuration_parameters"]}
-    # Create a frame to hold esp mega config options
-    light_driver_config_frame_espmega = tk.Frame(light_config_window)
-    # Create text inputs for each configuration option
-    for config_option in config_optioins["espmega"]:
-        config_option_label = tk.Label(
-            light_driver_config_frame_espmega, text=config_option["name"])
-        config_option_label.pack()
-        config_option_entry = tk.Entry(light_driver_config_frame_espmega)
-        config_option_entry.pack()
+        light_config_window, light_driver_var, "espmega", "homeassistant",command=light_driver_dropdown_callback)
+    light_driver_dropdown.grid(row=1, column=1)
 
-    # Create a frame to hold home assistant config options
-    light_driver_config_frame_homeassistant = tk.Frame(light_config_window)
-    # Create text inputs for each configuration option
-    for config_option in config_optioins["homeassistant"]:
-        config_option_label = tk.Label(
-            light_driver_config_frame_homeassistant, text=config_option["name"])
-        config_option_label.pack()
-        config_option_entry = tk.Entry(light_driver_config_frame_homeassistant)
-        config_option_entry.pack()
+
+    for device, config_option in config_options.items():
+        config_vars[device] = {}
+        # Create a frame to hold the config options for each light driver
+        config_frames[device] = tk.Frame(light_config_window)
+        for config_option in config_options[device]:
+            config_label_text = config_option.replace("_", " ").title()
+            config_option_label = ttk.Label(
+                config_frames[device], text=config_label_text)
+            config_option_label.pack()
+            config_option_var = tk.StringVar()
+            config_option_entry = ttk.Entry(config_frames[device], textvariable=config_option_var)
+            config_option_entry.pack()
+            config_vars[device][config_option] = config_option_var
 
     # Each light driver has different configuration options, different configuration options will be shown depending on the selected light driver
-
+    driver = get_driver_from_json()
+    # Load the coreesponding frame for the selected light driver
+    config_frames[driver].grid(row=2, column=0, columnspan=2)
+    # Load Config to Entry Fields
+    load_config_to_entry_fields(driver)
+    # Set the light driver dropdown to the correct value
+    light_driver_var.set(driver)
+    root.update()
+    # Create a button to save the light config and close the window
+    submit_button = ttk.Button(
+        light_config_window, text="Save", command=submit_light_config)
+    submit_button.grid(row=3, column=0, columnspan=2,pady=5)
     light_config_window.mainloop()
 
 
