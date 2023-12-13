@@ -22,7 +22,8 @@ setup(
     keywords='light mqtt espmega',
     install_requires=[
           'espmega',
-          'pillow'
+          'pillow',
+          'homeassistant-api'
       ],
 
 )

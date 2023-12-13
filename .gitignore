@@ -7,3 +7,4 @@ dist/
 config.json
 light_map.json
 *.pyc
+secrets_storage.py

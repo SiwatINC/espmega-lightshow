@@ -1,2 +1,3 @@
 espmega
 pillow
+homeassistant-api

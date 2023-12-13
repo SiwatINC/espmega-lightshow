@@ -2,6 +2,7 @@ from abc import ABC
 from espmega.espmega_r3 import ESPMega_standalone as ESPMega
 import json
 from typing import Optional
+from homeassistant_api import Client as HomeAssistantClient
 
 # This is the base class for all physical light drivers
 class LightDriver(ABC):
@@ -174,6 +175,30 @@ class DummyLightDriver(LightDriver):
     def get_driver_properties() -> dict:
         return {
             "name": "Dummy",
+            "support_brightness": False,
+            "support_color": False
+        }
+
+class HomeAssistantLightDriver(LightDriver):
+    def __init__(self, ha: HomeAssistantClient, entity_id: str):
+        # Connect to Home Assistant
+        self.light_api = ha.get_domain("light")
+        self.ha = ha
+        self.entity_id = entity_id
+        self.connected = True    
+
+    def set_light_state(self, state: bool) -> None:
+        self.state = state
+        if self.connected:
+            self.light_api.turn_on(entity_id=self.entity_id) if state else self.light_api.turn_off(entity_id=self.entity_id)
+
+    def get_light_state(self) -> bool:
+        return LightDriver.state_to_multistate(self.state)
+
+    @staticmethod
+    def get_driver_properties() -> dict:
+        return {
+            "name": "Home Assistant",
             "support_brightness": False,
             "support_color": False
         }
