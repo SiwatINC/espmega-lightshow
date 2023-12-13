@@ -3,7 +3,7 @@ from tkinter import ttk
 import json
 from tkinter import filedialog
 from espmega.espmega_r3 import ESPMega_standalone, ESPMega_slave, ESPMega
-from espmega_lightshow.drivers import ESPMegaLightGrid, ESPMegaLightDriver, ESPMegaStandaloneLightDriver
+from espmega_lightshow.drivers import ESPMegaLightGrid, ESPMegaLightDriver, ESPMegaStandaloneLightDriver, LightDriver
 from dataclasses import dataclass
 import sys
 import json
@@ -303,29 +303,36 @@ def check_light_online(row: int, column: int):
 
 
 def set_tile_state(row: int, column: int, state: bool):
+    # Get the tile element
     element = lightgrid_frame.grid_slaves(row=row, column=column)[0]
-    light_state = check_light_online(row, column)
-    if light_state == -1:
+    # If the light is disabled, set the tile color to disabled
+    if not light_grid.is_installed(row=row, column=column):
         element.config(bg=COLOR_DISABLED)
-    elif light_state == 0:
-        if state:
-            element.config(bg=COLOR_ON_OFFLINE)
-        else:
-            element.config(bg=COLOR_OFF_OFFLINE)
-    else:
-        if state:
-            element.config(bg=COLOR_ON)
-        else:
-            element.config(bg=COLOR_OFF)
-    if (ENABLE_PHYSICAL_SYNCRONIZATION and light_state != -1):
-        light_grid.set_light_state(row, column, state)
-
+        return
+    # Get Physical Light
+    light = light_grid.get_physical_light(row, column)
+    # Get the light state
+    light_state = light.get_light_state()
+    # Invert the state
+    light.set_light_state(not light_state)
+    # Read the state again
+    light_state = light.get_light_state()
+    # Set the tile color
+    if light_state == LightDriver.LIGHT_STATE_OFF:
+        element.config(bg=COLOR_OFF)
+    elif light_state == LightDriver.LIGHT_STATE_ON:
+        element.config(bg=COLOR_ON)
+    elif light_state == LightDriver.LIGHT_STATE_OFF_UNCONTROLLED:
+        element.config(bg=COLOR_OFF_OFFLINE)
+    elif light_state == LightDriver.LIGHT_STATE_ON_UNCONTROLLED:
+        element.config(bg=COLOR_ON_OFFLINE)
 
 def get_tile_state(row: int, column: int):
-    element = lightgrid_frame.grid_slaves(row=row, column=column)[0]
-    if element.cget("bg") == COLOR_ON or element.cget("bg") == COLOR_ON_OFFLINE:
+    light = light_grid.get_physical_light(row, column)
+    state = light.get_light_state()
+    if state == LightDriver.LIGHT_STATE_ON or state == LightDriver.LIGHT_STATE_ON_UNCONTROLLED:
         return True
-    else:
+    elif state == LightDriver.LIGHT_STATE_OFF or state == LightDriver.LIGHT_STATE_OFF_UNCONTROLLED:
         return False
 
 
@@ -1423,5 +1430,5 @@ with open("config.json", "w") as file:
 
 # Take all connected controllers out of rapid response mode
 if rapid_mode:
-    for controller in light_grid.controllers.values():
-        controller.disable_rapid_response_mode()
+    for driver in light_grid.drivers.values():
+        driver.disable_rapid_response_mode()

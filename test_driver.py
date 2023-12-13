@@ -17,6 +17,8 @@ light_grid.assign_physical_light(0, 1, slave_driver)
 while True:
     light_grid.set_light_state(0, 0, True)
     light_grid.set_light_state(0, 1, False)
+    light0 = light_grid.get_physical_light(0, 0)
+    print(light0.is_connected())
     sleep(1)
     light_grid.set_light_state(0, 0, False)
     light_grid.set_light_state(0, 1, True)
