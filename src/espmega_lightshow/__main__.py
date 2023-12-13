@@ -3,6 +3,7 @@ from tkinter import ttk
 import json
 from tkinter import filedialog
 from espmega.espmega_r3 import ESPMega_standalone, ESPMega_slave, ESPMega
+from espmega_lightshow.drivers import ESPMegaLightGrid, ESPMegaLightDriver, ESPMegaStandaloneLightDriver, LightDriver
 from dataclasses import dataclass
 import sys
 import json
@@ -22,121 +23,7 @@ import subprocess
 import re
 from PIL import Image, ImageTk
 
-@dataclass
-class PhysicalLightEntity:
-    controller: ESPMega
-    pwm_channel: int
-
-class LightGrid:
-    def __init__(self, rows: int = 0, columns: int = 0, design_mode: bool = False):
-        self.rows = rows
-        self.columns = columns
-        self.lights: list = [None] * rows * columns
-        self.controllers = {}
-        self.design_mode = design_mode
-
-    def assign_physical_light(self, row: int, column: int, physical_light: PhysicalLightEntity):
-        self.lights[row * self.columns + column] = physical_light
-
-    def get_physical_light(self, row, column):
-        return self.lights[row * self.columns + column]
-
-    def set_light_state(self, row: int, column: int, state: bool):
-        physical_light = self.get_physical_light(row, column)
-        if physical_light and not self.design_mode:
-            physical_light.controller.digital_write(
-                physical_light.pwm_channel, state)
-
-    def create_physical_light(self, row: int, column: int, controller: ESPMega, pwm_channel: int):
-        self.assign_physical_light(
-            row, column, PhysicalLightEntity(controller, pwm_channel))
-
-    def get_light_state(self, row: int, column: int):
-        physical_light = self.get_physical_light(row, column)
-        if physical_light:
-            return physical_light.controller.get_pwm_state(physical_light.pwm_channel)
-        else:
-            return None
-
-    def read_light_map(self, light_map: list):
-        self.light_map = light_map
-        self.rows = len(light_map)
-        self.columns = len(light_map[0])
-        self.lights = [None] * self.rows * self.columns
-        self.controllers = {}  # Dictionary to store existing controllers
-        self.failed_controllers  = {}  # Dictionary to store failed controllers
-        self.connected_controllers = {}  # Dictionary to store connected controllers
-        for row_index, row in enumerate(light_map):
-            for column_index, light in enumerate(row):
-                if light is None:
-                    self.assign_physical_light(row_index, column_index, None)
-                else:
-                    base_topic = light["base_topic"]
-                    pwm_id = light["pwm_id"]
-
-                    try:
-                        if base_topic in self.controllers:
-                            controller = self.controllers[base_topic]
-                        elif base_topic in self.failed_controllers:
-                            self.assign_physical_light(row_index, column_index, None)
-                        else:
-                            if not self.design_mode:
-                                controller = ESPMega_standalone(
-                                    base_topic, light_server, light_server_port)
-                                if rapid_mode:
-                                    controller.enable_rapid_response_mode()
-                                self.connected_controllers[base_topic] = controller
-                            else:
-                                controller = None
-                            self.controllers[base_topic] = controller
-                        self.create_physical_light(
-                            row_index, column_index, controller, pwm_id)
-                        self.set_light_state(row_index, column_index, False)
-                    except Exception as e:
-                        self.failed_controllers[base_topic] = e
-                        self.assign_physical_light(
-                            row_index, column_index, None)
-        # Summarize the failed controllers
-        if len(self.failed_controllers) > 0:
-            error_message = "The following controllers failed to connect:\n"
-            for base_topic, error in self.failed_controllers.items():
-                error_message += f"{base_topic}: {error}\n"
-            messagebox.showerror("Controller Error", error_message+"Please note that the controllers must be connected to the network and running the ESPMega firmware.\n\nYou may continue without these lights, but they will not be able to be controlled.")
-
-    def read_light_map_from_file(self, filename: str):
-        try:
-            with open(filename, "r") as file:
-                light_map = json.load(file)
-            # Check if the light map is valid
-            if len(light_map) == 0:
-                raise Exception("Light map cannot be empty.")
-            if len(light_map[0]) == 0:
-                raise Exception("Light map cannot be empty.")
-            for row in light_map:
-                if len(row) != len(light_map[0]):
-                    raise Exception(
-                        "All rows in the light map must have the same length.")
-                for column in row:
-                    if column != None:
-                        if "base_topic" not in column:
-                            raise Exception(
-                                "The base_topic field is missing from a light.")
-                        if "pwm_id" not in column:
-                            raise Exception(
-                                "The pwm_id field is missing from a light.")
-                        if type(column["base_topic"]) != str:
-                            raise Exception(
-                                "The base_topic field must be a string.")
-                        if type(column["pwm_id"]) != int:
-                            raise Exception(
-                                "The pwm_id field must be an integer.")
-            self.read_light_map(light_map)
-        except FileNotFoundError:
-            messagebox.showerror(
-                "File Not Found", f"The file {filename} could not be found.")
-        except Exception as e:
-            messagebox.showerror("Error", str(e))
-            sys.exit(1)
+LightGrid = ESPMegaLightGrid
 
 def restart():
     python = sys.executable
@@ -394,7 +281,7 @@ def color_to_state(color: str):
 
 
 # Load light map from light_map.json
-light_grid = LightGrid(design_mode=design_mode)
+light_grid = LightGrid(light_server, light_server_port, design_mode=design_mode)
 light_grid.read_light_map_from_file(filename=light_map_file)
 rows = light_grid.rows
 columns = light_grid.columns
@@ -406,7 +293,6 @@ playback_active: bool = False
 
 # -1 if light is disabled, 0 if light is offline, 1 if light is online
 
-
 def check_light_online(row: int, column: int):
     if (light_grid.light_map[row][column] == None):
         return -1
@@ -414,31 +300,34 @@ def check_light_online(row: int, column: int):
         return 0
     return 1
 
-
 def set_tile_state(row: int, column: int, state: bool):
+    # Get the tile element
     element = lightgrid_frame.grid_slaves(row=row, column=column)[0]
-    light_state = check_light_online(row, column)
-    if light_state == -1:
+    # If the light is disabled, set the tile color to disabled
+    if not light_grid.is_installed(row=row, column=column):
         element.config(bg=COLOR_DISABLED)
-    elif light_state == 0:
-        if state:
-            element.config(bg=COLOR_ON_OFFLINE)
-        else:
-            element.config(bg=COLOR_OFF_OFFLINE)
-    else:
-        if state:
-            element.config(bg=COLOR_ON)
-        else:
-            element.config(bg=COLOR_OFF)
-    if (ENABLE_PHYSICAL_SYNCRONIZATION and light_state != -1):
-        light_grid.set_light_state(row, column, state)
-
+        return
+    # Get Physical Light
+    light = light_grid.get_physical_light(row, column)
+    # Set the light state
+    light.set_light_state(state)
+    light_state = light.state_to_multistate(state)
+    # Set the tile color
+    if light_state == LightDriver.LIGHT_STATE_OFF:
+        element.config(bg=COLOR_OFF)
+    elif light_state == LightDriver.LIGHT_STATE_ON:
+        element.config(bg=COLOR_ON)
+    elif light_state == LightDriver.LIGHT_STATE_OFF_UNCONTROLLED:
+        element.config(bg=COLOR_OFF_OFFLINE)
+    elif light_state == LightDriver.LIGHT_STATE_ON_UNCONTROLLED:
+        element.config(bg=COLOR_ON_OFFLINE)
 
 def get_tile_state(row: int, column: int):
-    element = lightgrid_frame.grid_slaves(row=row, column=column)[0]
-    if element.cget("bg") == COLOR_ON or element.cget("bg") == COLOR_ON_OFFLINE:
+    light = light_grid.get_physical_light(row, column)
+    state = light.get_light_state()
+    if state == LightDriver.LIGHT_STATE_ON or state == LightDriver.LIGHT_STATE_ON_UNCONTROLLED:
         return True
-    else:
+    elif state == LightDriver.LIGHT_STATE_OFF or state == LightDriver.LIGHT_STATE_OFF_UNCONTROLLED:
         return False
 
 
@@ -651,8 +540,10 @@ def change_light_config(event):
             json.dump(light_grid.light_map, file)
 
         # Reload the light_grid
-        light_grid = LightGrid(design_mode=design_mode)
-        light_grid.read_light_map(modified_light_map)
+        light_grid = LightGrid(light_server, light_server_port, design_mode=design_mode)
+        light_grid.read_light_map_from_file(filename=light_map_file)
+        rows = light_grid.rows
+        columns = light_grid.columns
 
         render_frame_at_index(slider.get())
         root.update()
@@ -746,7 +637,7 @@ def reconnect_light_controllers():
     global light_grid
     global design_mode
     old_light_map = light_grid.light_map
-    light_grid = LightGrid(design_mode=design_mode)
+    light_grid = LightGrid(light_server, light_server_port, design_mode=design_mode)
     light_grid.read_light_map(old_light_map)
     render_frame_at_index(slider.get())
     root.update()
@@ -1536,5 +1427,5 @@ with open("config.json", "w") as file:
 
 # Take all connected controllers out of rapid response mode
 if rapid_mode:
-    for controller in light_grid.controllers.values():
-        controller.disable_rapid_response_mode()
+    for driver in light_grid.drivers.values():
+        driver.disable_rapid_response_mode()

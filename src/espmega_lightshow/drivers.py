@@ -2,14 +2,18 @@ from abc import ABC
 from espmega.espmega_r3 import ESPMega_standalone as ESPMega
 import json
 from typing import Optional
+
 # This is the base class for all physical light drivers
-
-
 class LightDriver(ABC):
-    conntected: bool = False
+    LIGHT_STATE_OFF = 0
+    LIGHT_STATE_ON = 1
+    LIGHT_STATE_OFF_UNCONTROLLED = 2
+    LIGHT_STATE_ON_UNCONTROLLED = 3
+    connected: bool = False
     state: bool = False
     color: tuple = (0, 0, 0)
     brightness: int = 0
+    exception: Optional[str] = None
 
     def __init__(self, **kwargs):
         # The init function should take in any parameters needed to initialize the driver
@@ -24,17 +28,42 @@ class LightDriver(ABC):
     def get_light_state(self) -> int:
         # This function should return the current state of the light
         # Returns 0 if the light is off, 1 if the light is on
-        # Return 2 if the light is on but is not able to be controlled
-        # Return 3 if the light is off but is not able to be controlled
+        # Return 2 if the light is off but is not able to be controlled
+        # Return 3 if the light is on but is not able to be controlled
         pass
+
+    @staticmethod
+    def invert_light_state(state: int) -> int:
+        # This function should invert the given light state
+        if(state == LightDriver.LIGHT_STATE_OFF):
+            return LightDriver.LIGHT_STATE_ON
+        elif(state == LightDriver.LIGHT_STATE_ON):
+            return LightDriver.LIGHT_STATE_OFF
+        elif(state == LightDriver.LIGHT_STATE_OFF_UNCONTROLLED):
+            return LightDriver.LIGHT_STATE_ON_UNCONTROLLED
+        elif(state == LightDriver.LIGHT_STATE_ON_UNCONTROLLED):
+            return LightDriver.LIGHT_STATE_OFF_UNCONTROLLED
+
+    def state_to_multistate(self, state: int) -> int:
+        # This function should convert the given state to a multistate
+        # A state is a binary value, either on or off
+        # A multistate holds both states, on and off, and whether they are controlled
+
+        # Returns 0 if the light is off, 1 if the light is on
+        # Return 2 if the light is off but is not able to be controlled
+        # Return 3 if the light is on but is not able to be controlled
+        if self.connected:
+            return state
+        else:
+            return state + 2
 
     def is_connected(self) -> bool:
         # This function should return whether the driver is connected to the light
-        return self.conntected
+        return self.connected
     
     def get_exception(self) -> Optional[str]:
         # This function should return the exception that caused the driver to be disconnected
-        if self.conntected:
+        if self.connected:
             return None
         return self.exception
 
@@ -74,20 +103,21 @@ class ESPMegaLightDriver(LightDriver):
         self.controller = controller
         self.pwm_channel = pwm_channel
         if controller is None:
-            self.conntected = False
+            self.connected = False
             self.exception = "Controller is not connected."
-        self.conntected = True
+        else:
+            self.connected = True
 
     def set_light_state(self, state: bool) -> None:
-        if not self.conntected:
+        if not self.connected:
             self.state = state
         else:
             self.controller.digital_write(self.pwm_channel, state)
 
     def get_light_state(self) -> bool:
-        if self.conntected:
+        if self.connected:
             self.state = self.controller.get_pwm_state(self.pwm_channel)
-        return self.state + 2 * (not self.conntected)
+        return self.state + 2 * (not self.connected)
 
     @staticmethod
     def get_driver_properties() -> dict:
@@ -115,12 +145,11 @@ class ESPMegaStandaloneLightDriver(ESPMegaLightDriver):
             print("Connected to controller.")
             self.connected = True
         except Exception as e:
-            print(e)
             self.controller = None
             self.exception = e
             self.connected = False
     def close(self):
-        if self.conntected and self.rapid_mode:
+        if self.connected and self.rapid_mode:
             self.controller.disable_rapid_response_mode()
     @staticmethod
     def get_driver_properties() -> dict:
@@ -141,13 +170,17 @@ class ESPMegaLightGrid:
         self.light_server_port = light_server_port
         self.design_mode = design_mode
 
+    def is_installed(self, row: int, column: int) -> bool:
+        # True if the light is not a NoneType
+        return not isinstance(self.lights[row * self.columns + column], type(None))
+
     def assign_physical_light(self, row: int, column: int, physical_light: Optional[LightDriver]):
         self.lights[row * self.columns + column] = physical_light
 
     def mark_light_disappeared(self, row: int, column: int):
         self.lights[row * self.columns + column] = None
 
-    def get_physical_light(self, row, column):
+    def get_physical_light(self, row, column) -> Optional[LightDriver]:
         return self.lights[row * self.columns + column]
 
     def set_light_state(self, row: int, column: int, state: bool) -> None:
@@ -163,7 +196,7 @@ class ESPMegaLightGrid:
         self.initialize_light_map(light_map)
         for row_index, row in enumerate(light_map):
             for column_index, light in enumerate(row):
-                self.__assign_light(row_index, column_index, light)
+                self._assign_light(row_index, column_index, light)
         return [self.connected_drivers, self.failed_drivers]
 
     def initialize_light_map(self, light_map):
@@ -171,13 +204,13 @@ class ESPMegaLightGrid:
         self.rows = len(light_map)
         self.columns = len(light_map[0])
         self.lights = [None] * self.rows * self.columns
-        self.controllers = {}  # Dictionary to store existing controllers
-        self.failed_controllers = {}  # Dictionary to store failed controllers
-        self.connected_controllers = {}  # Dictionary to store connected controllers
+        self.failed_drivers = {}  # Dictionary to store failed controllers
+        self.connected_drivers = {}  # Dictionary to store connected controllers
 
     def _assign_light(self, row_index, column_index, light):
+        print(f"Assigning light at {row_index}, {column_index}, its base topic is {light['base_topic']}, The controller loaded are {self.drivers}")
         if self.design_mode:
-            self.connected_controllers[light["base_topic"]] = None
+            self.connected_drivers[light["base_topic"]] = None
             self.assign_physical_light(row_index, column_index, None)
             return
         if light is None:
@@ -189,19 +222,25 @@ class ESPMegaLightGrid:
         base_topic = light["base_topic"]
         pwm_id = light["pwm_id"]
         if base_topic not in self.drivers:
-            self._create_new_driver(base_topic)
+            driver = self._create_new_driver(base_topic, pwm_id)
         else:
             controller = self.drivers[base_topic].controller
             driver = ESPMegaLightDriver(controller, pwm_id)
         self.assign_physical_light(row_index, column_index, driver)
 
-    def _create_new_driver(self, base_topic):
+    def _create_new_driver(self, base_topic: str, pwm_id: int):
         if not self.design_mode:
-            driver = ESPMegaStandaloneLightDriver(base_topic, self.light_server, self.light_server_port)
+            print("Creating new driver")
+            driver = ESPMegaStandaloneLightDriver(base_topic, pwm_id, self.light_server, self.light_server_port)
+            print("Created new driver")
         if driver.is_connected():
-            self.drivers[base_topic] = driver
+            print(f"Adding driver {base_topic} to connected drivers")
+            self.connected_drivers[base_topic] = driver
         else:
+            print(f"Adding driver {base_topic} to failed drivers, its exception is {driver.get_exception()}")
             self.failed_drivers[base_topic] = driver.get_exception()
+        self.drivers[base_topic] = driver
+        return driver
 
     def read_light_map_from_file(self, filename: str):
         try:
@@ -209,7 +248,7 @@ class ESPMegaLightGrid:
                 light_map = json.load(file)
             
             ESPMegaLightGrid._validate_light_map(light_map)
-            ESPMegaLightGrid.read_light_map(light_map)
+            self.read_light_map(light_map)
             
         except FileNotFoundError:
             raise FileNotFoundError("The light map file does not exist.")
