@@ -32,6 +32,31 @@ class LightDriver(ABC):
         # Return 3 if the light is on but is not able to be controlled
         pass
 
+    @staticmethod
+    def invert_light_state(state: int) -> int:
+        # This function should invert the given light state
+        if(state == LightDriver.LIGHT_STATE_OFF):
+            return LightDriver.LIGHT_STATE_ON
+        elif(state == LightDriver.LIGHT_STATE_ON):
+            return LightDriver.LIGHT_STATE_OFF
+        elif(state == LightDriver.LIGHT_STATE_OFF_UNCONTROLLED):
+            return LightDriver.LIGHT_STATE_ON_UNCONTROLLED
+        elif(state == LightDriver.LIGHT_STATE_ON_UNCONTROLLED):
+            return LightDriver.LIGHT_STATE_OFF_UNCONTROLLED
+
+    def state_to_multistate(self, state: int) -> int:
+        # This function should convert the given state to a multistate
+        # A state is a binary value, either on or off
+        # A multistate holds both states, on and off, and whether they are controlled
+
+        # Returns 0 if the light is off, 1 if the light is on
+        # Return 2 if the light is off but is not able to be controlled
+        # Return 3 if the light is on but is not able to be controlled
+        if self.connected:
+            return state
+        else:
+            return state + 2
+
     def is_connected(self) -> bool:
         # This function should return whether the driver is connected to the light
         return self.connected
@@ -210,10 +235,11 @@ class ESPMegaLightGrid:
             print("Created new driver")
         if driver.is_connected():
             print(f"Adding driver {base_topic} to connected drivers")
-            self.drivers[base_topic] = driver
+            self.connected_drivers[base_topic] = driver
         else:
             print(f"Adding driver {base_topic} to failed drivers, its exception is {driver.get_exception()}")
             self.failed_drivers[base_topic] = driver.get_exception()
+        self.drivers[base_topic] = driver
         return driver
 
     def read_light_map_from_file(self, filename: str):

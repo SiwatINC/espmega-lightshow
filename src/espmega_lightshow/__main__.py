@@ -293,14 +293,12 @@ playback_active: bool = False
 
 # -1 if light is disabled, 0 if light is offline, 1 if light is online
 
-
 def check_light_online(row: int, column: int):
     if (light_grid.light_map[row][column] == None):
         return -1
     if (light_grid.get_physical_light(row, column) == None):
         return 0
     return 1
-
 
 def set_tile_state(row: int, column: int, state: bool):
     # Get the tile element
@@ -311,12 +309,9 @@ def set_tile_state(row: int, column: int, state: bool):
         return
     # Get Physical Light
     light = light_grid.get_physical_light(row, column)
-    # Get the light state
-    light_state = light.get_light_state()
-    # Invert the state
-    light.set_light_state(not light_state)
-    # Read the state again
-    light_state = light.get_light_state()
+    # Set the light state
+    light.set_light_state(state)
+    light_state = light.state_to_multistate(state)
     # Set the tile color
     if light_state == LightDriver.LIGHT_STATE_OFF:
         element.config(bg=COLOR_OFF)
@@ -545,8 +540,10 @@ def change_light_config(event):
             json.dump(light_grid.light_map, file)
 
         # Reload the light_grid
-        light_grid = LightGrid(design_mode=design_mode)
-        light_grid.read_light_map(modified_light_map)
+        light_grid = LightGrid(light_server, light_server_port, design_mode=design_mode)
+        light_grid.read_light_map_from_file(filename=light_map_file)
+        rows = light_grid.rows
+        columns = light_grid.columns
 
         render_frame_at_index(slider.get())
         root.update()
@@ -640,7 +637,7 @@ def reconnect_light_controllers():
     global light_grid
     global design_mode
     old_light_map = light_grid.light_map
-    light_grid = LightGrid(design_mode=design_mode)
+    light_grid = LightGrid(light_server, light_server_port, design_mode=design_mode)
     light_grid.read_light_map(old_light_map)
     render_frame_at_index(slider.get())
     root.update()
