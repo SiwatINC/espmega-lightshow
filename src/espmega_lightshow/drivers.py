@@ -1,8 +1,9 @@
 from abc import ABC
-from espmega.espmega_r3 import ESPMega_standalone as ESPMega
+from espmega.espmega_r3 import ESPMega_standalone, ESPMega
 import json
 from typing import Optional
 from homeassistant_api import Client as HomeAssistantClient
+from paho.mqtt.client import Client as MQTTClient
 
 # This is the base class for all physical light drivers
 class LightDriver(ABC):
@@ -125,7 +126,8 @@ class ESPMegaLightDriver(LightDriver):
         return {
             "name": "ESPMega",
             "support_brightness": False,
-            "support_color": False
+            "support_color": False,
+            "configuration_parameters": ["light_server", "light_server_port", "pwm_channel"]
         }
 
 
@@ -139,7 +141,7 @@ class ESPMegaStandaloneLightDriver(ESPMegaLightDriver):
         self.state = False
         self.connected = False
         try:
-            self.controller = ESPMega(
+            self.controller = ESPMega_standalone(
                 base_topic, light_server, light_server_port)
             if rapid_mode:
                 self.controller.set_rapid_mode()
@@ -157,26 +159,78 @@ class ESPMegaStandaloneLightDriver(ESPMegaLightDriver):
         return {
             "name": "ESPMega Standalone",
             "support_brightness": False,
-            "support_color": False
+            "support_color": False,
+            "configuration_parameters": ["light_server", "light_server_port", "pwm_channel"]
         }
+    
+# This class manage a group of ESPMegaLightDriver and ESPMegaStandaloneLightDriver
+# It also allows for multiple ESPMegaLightDriver and ESPMegaStandaloneLightDriver connected to different servers
+# It manages the connection to the servers and the controllers to ensure that there is only one connection to each server
+# It also manages the controllers to ensure that there is only one controller per base topic
+class ESPMegaMultiController:
+    def __init__(self):
+        # Dictionary of server ip to mqtt connection
+        self.mqtt_connections = {}
+        # Dictionary of tuple of server ip, port, and base topic to controller
+        self.controllers = {}
+        # Dictionary of tuple of server ip, port, base topic, and pwm channel to ESPMegaLightDriver
+        self.drivers = {}
+    def get_controller(self, base_topic: str, light_server: str, light_server_port: int, rapid_mode: bool = False) -> ESPMega:
+        # Check if the there is a connection to the server
+        if (light_server, light_server_port) not in self.mqtt_connections:
+            # If there is no connection, create one
+            self.mqtt_connections[(light_server, light_server_port)] = MQTTClient()
+            try:
+                self.mqtt_connections[(light_server, light_server_port)].connect(light_server, light_server_port)
+            except Exception as e:
+                print(e)
+                return None
+        # Check if there is a controller for the base topic and server
+        if (light_server, light_server_port, base_topic) not in self.controllers:
+            # If there is no controller, create one
+            # Note that the connection to the server is already established at this point
+            # The only thing that can cause the controller to fail is if a controller does not exist for the base topic
+            try:
+                self.controllers[(light_server, light_server_port, base_topic)] = ESPMega(base_topic, self.mqtt_connections[(light_server, light_server_port)])
+            except Exception as e:
+                print(e)
+                # If the controller fails to connect, return None as the controller does not exist
+                return None
+            if rapid_mode:
+                self.controllers[(light_server, light_server_port, base_topic)].enable_rapid_response_mode()
+        # Return the controller
+        return self.controllers[(light_server, light_server_port, base_topic)]
+    def remove_controller(self, base_topic: str, light_server: str, light_server_port: int):
+        # Check if there is a controller for the base topic and server
+        if (light_server, light_server_port, base_topic) in self.controllers:
+            # Disable rapid response mode
+            self.controllers[(light_server, light_server_port, base_topic)].disable_rapid_response_mode()
+            # If there is a controller, check if there is any other controllers for the server
+            if sum([1 for key in self.controllers.keys() if key[0] == light_server and key[1] == light_server_port]) == 1:
+                # If there is no other controllers for the server, close the connection
+                self.mqtt_connections[(light_server, light_server_port)].disconnect()
+                del self.mqtt_connections[(light_server, light_server_port)]
+            # Delete the controller
+            del self.controllers[(light_server, light_server_port, base_topic)]
 
 class DummyLightDriver(LightDriver):
-    def __init__(self, **kwargs):
+    def __init__(self, offline: bool = False):
         self.connected = True
         self.state = False
-
+        self.offline = offline
     def set_light_state(self, state: bool) -> None:
         self.state = state
 
-    def get_light_state(self) -> bool:
-        return self.state
+    def get_light_state(self) -> int:
+        return self.state + 2 * self.offline
 
     @staticmethod
     def get_driver_properties() -> dict:
         return {
             "name": "Dummy",
             "support_brightness": False,
-            "support_color": False
+            "support_color": False,
+            "configuration_parameters": []
         }
 
 class HomeAssistantLightDriver(LightDriver):
@@ -200,8 +254,25 @@ class HomeAssistantLightDriver(LightDriver):
         return {
             "name": "Home Assistant",
             "support_brightness": False,
-            "support_color": False
+            "support_color": False,
+            "configuration_parameters": ["api_url", "api_key", "entity_id"]
         }
+
+class HomeAssistantMultiServer:
+    def __init__(self):
+        # Dictionary of a tuple of api url and api key to Home Assistant client
+        self.ha_clients = {}
+    def get_ha_client(self, api_url: str, api_key: str) -> HomeAssistantClient:
+        # Check if there is a Home Assistant client for the api url and api key
+        if (api_url, api_key) not in self.ha_clients:
+            # If there is no Home Assistant client, create one
+            try:
+                self.ha_clients[(api_url, api_key)] = HomeAssistantClient(api_url, api_key)
+            except Exception as e:
+                print(e)
+                return None
+            # Return the Home Assistant client
+        return self.ha_clients[(api_url, api_key)]
 
 class LightGrid(ABC):
     def __init__(self, rows: int = 0, columns: int = 0, design_mode: bool = False):
@@ -365,3 +436,73 @@ class HomeAssistantLightGrid(LightGrid):
         self.ha_client = HomeAssistantClient(api_url, api_key)
         self.lights: list = [None] * rows * columns
         self.design_mode = design_mode
+
+# A universal light grid is a light grid that can use any driver
+class UniversalLightGrid(LightGrid):
+    def __init__(self, rows: int = 0, columns: int = 0, design_mode: bool = False):
+        self.rows = rows
+        self.columns = columns
+        self.lights: list = [None] * rows * columns
+        self.driver_types: list = [None] * rows * columns
+        self.design_mode = design_mode
+        self.espmega_driver_bank = ESPMegaMultiController()
+        self.ha_server_bank = HomeAssistantMultiServer()
+    def read_light_map(self, light_map: list) -> list:
+        # First we will validate the light map
+        self._validate_light_map(light_map)
+        # Then we will initialize the light map
+        self.initialize_light_map(light_map)
+        for row_index, row in enumerate(light_map):
+            for column_index, light in enumerate(row):
+                # light is a dictionary with fields varying by driver
+                # Are we in design mode?
+                # If we are in design mode, we don't need to connect to the drivers, so we can just assign a dummy driver
+                if self.design_mode:
+                    self.assign_physical_light(row_index, column_index, DummyLightDriver())
+                # Let's switch on the driver field
+                driver_type = light["driver"]
+                print(light)
+                # If the driver is espmega, we utilize the ESPMegaMultiController to manage the controllers
+                if driver_type == "espmega":
+                    controller = self.espmega_driver_bank.get_controller(light["base_topic"], light["light_server"], light["light_server_port"])
+                    print(f"Controller: {controller}, {light['base_topic']}")
+                    # The controller might be None if the connection failed, we will assign a dummy driver in offline mode
+                    if isinstance(controller, type(None)):
+                        self.assign_physical_light(row_index, column_index, DummyLightDriver(offline=True))
+                    else:
+                        # Otherwise, we will create a new ESPMegaLightDriver
+                        driver = ESPMegaLightDriver(controller, light["pwm_id"])
+                        # We will then assign the driver to the light
+                        self.assign_physical_light(row_index, column_index, driver)
+                elif driver_type == "homeassistant":
+                    # If the driver is homeassistant, we will create a new HomeAssistantLightDriver
+                    # We will utilize the HomeAssistantMultiServer to manage the connections to the servers
+                    ha_client = self.ha_server_bank.get_ha_client(light["api_url"], light["api_key"])
+                    driver = HomeAssistantLightDriver(ha_client, light["entity_id"])
+                    # We will then assign the driver to the light
+                    self.assign_physical_light(row_index, column_index, driver)
+    def initialize_light_map(self, light_map):
+        self.light_map = light_map
+        self.rows = len(light_map)
+        self.columns = len(light_map[0])
+        self.lights = [None] * self.rows * self.columns
+
+
+    @staticmethod
+    def _validate_light_map(light_map):
+        # This function should validate the light map
+
+        # Check if the light map is empty
+        if len(light_map) == 0:
+            raise ValueError("Light map cannot be empty.")
+        for row in light_map:
+            UniversalLightGrid._validate_row(row, light_map[0])
+
+    @staticmethod
+    def _validate_row(row, reference_row):
+        for column in row:
+            UniversalLightGrid._validate_column(column)
+    @staticmethod
+    def _validate_column(column):
+        # This function should validate the column
+        pass

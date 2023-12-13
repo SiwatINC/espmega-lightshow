@@ -1,0 +1,32 @@
+[
+    [
+        {
+            "driver": "espmega",
+            "light_server": "192.168.0.26",
+            "light_sever_port": 1883,
+            "base_topic": "/espmega",
+            "pwm_id": 0
+        },
+        {
+            "driver": "homeassistant",
+            "api_url": "http://192.168.0.26",
+            "api_key": "YOUR_API_KEY",
+            "entity_id": "light.light0"
+        }
+    ],
+    [
+        {
+            "driver": "espmega",
+            "light_server": "192.168.0.26",
+            "light_sever_port": 1883,
+            "base_topic": "/espmega",
+            "pwm_id": 1
+        },
+        {
+            "driver": "homeassistant",
+            "api_url": "http://192.168.0.26",
+            "api_key": "YOUR_API_KEY",
+            "entity_id": "light.light0"
+        }
+    ]
+]
