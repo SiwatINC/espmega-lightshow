@@ -2,8 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 import json
 from tkinter import filedialog
-from espmega.espmega_r3 import ESPMega_standalone, ESPMega_slave, ESPMega
-from espmega_lightshow.drivers import ESPMegaLightGrid, ESPMegaLightDriver, ESPMegaStandaloneLightDriver, LightDriver
+from espmega_lightshow.drivers import ESPMegaLightGrid, LightDriver
 from dataclasses import dataclass
 import sys
 import json

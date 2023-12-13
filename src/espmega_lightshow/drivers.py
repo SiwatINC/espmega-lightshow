@@ -159,6 +159,24 @@ class ESPMegaStandaloneLightDriver(ESPMegaLightDriver):
             "support_color": False
         }
 
+class DummyLightDriver(LightDriver):
+    def __init__(self, **kwargs):
+        self.connected = True
+        self.state = False
+
+    def set_light_state(self, state: bool) -> None:
+        self.state = state
+
+    def get_light_state(self) -> bool:
+        return self.state
+
+    @staticmethod
+    def get_driver_properties() -> dict:
+        return {
+            "name": "Dummy",
+            "support_brightness": False,
+            "support_color": False
+        }
 
 class ESPMegaLightGrid:
     def __init__(self, light_server: str, light_server_port: int, rows: int = 0, columns: int = 0, rapid_mode: bool = False, design_mode: bool = False):
@@ -211,7 +229,7 @@ class ESPMegaLightGrid:
         print(f"Assigning light at {row_index}, {column_index}, its base topic is {light['base_topic']}, The controller loaded are {self.drivers}")
         if self.design_mode:
             self.connected_drivers[light["base_topic"]] = None
-            self.assign_physical_light(row_index, column_index, None)
+            self.assign_physical_light(row_index, column_index, DummyLightDriver())
             return
         if light is None:
             self.assign_physical_light(row_index, column_index, None)
