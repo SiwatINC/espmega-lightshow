@@ -203,7 +203,60 @@ class HomeAssistantLightDriver(LightDriver):
             "support_color": False
         }
 
-class ESPMegaLightGrid:
+class LightGrid(ABC):
+    def __init__(self, rows: int = 0, columns: int = 0, design_mode: bool = False):
+        self.rows = rows
+        self.columns = columns
+        self.lights: list = [None] * rows * columns
+        self.design_mode = design_mode
+    def is_installed(self, row: int, column: int) -> bool:
+        # Check if the light is enabled
+        # True if the light is not a NoneType
+        return not isinstance(self.lights[row * self.columns + column], type(None))
+    def assign_physical_light(self, row: int, column: int, physical_light: Optional[LightDriver]):
+        self.lights[row * self.columns + column] = physical_light
+    def get_physical_light(self, row, column) -> Optional[LightDriver]:
+        return self.lights[row * self.columns + column]
+    def set_light_state(self, row: int, column: int, state: bool) -> None:
+        physical_light = self.get_physical_light(row, column)
+        if not self.design_mode:
+            physical_light.set_light_state(state)
+    def get_light_state(self, row: int, column: int):
+        physical_light = self.get_physical_light(row, column)
+        return physical_light.get_light_state()
+    def read_light_map(self, light_map: list) -> list:
+        # This function should read the light map and assign the lights to the grid
+        # The light map is a 2D array of light objects
+        # The light objects are dictionaries with fields varying by driver
+        # The light map should be validated before being passed to this function
+        # This function should return a list of connected drivers and a list of failed drivers
+        # The connected drivers list should be a dictionary of base topics to drivers
+        # The failed drivers list should be a dictionary of base topics to exceptions
+        pass
+    def initialize_light_map(self, light_map):
+        # This function should initialize the light map
+        # It should set the rows, columns, lights, failed drivers, and connected drivers
+        pass
+
+    def _validate_light_map(self, light_map):
+        # This function should validate the light map
+        pass
+
+    @staticmethod
+    def _validate_light_map(light_map):
+        # This function should validate the light map
+        pass
+
+    @staticmethod
+    def _validate_row(row, reference_row):
+        # This function should validate the row
+        pass
+    @staticmethod
+    def _validate_column(column):
+        # This function should validate the column
+        pass
+
+class ESPMegaLightGrid(LightGrid):
     def __init__(self, light_server: str, light_server_port: int, rows: int = 0, columns: int = 0, rapid_mode: bool = False, design_mode: bool = False):
         self.rows = rows
         self.columns = columns
@@ -212,28 +265,6 @@ class ESPMegaLightGrid:
         self.light_server = light_server
         self.light_server_port = light_server_port
         self.design_mode = design_mode
-
-    def is_installed(self, row: int, column: int) -> bool:
-        # True if the light is not a NoneType
-        return not isinstance(self.lights[row * self.columns + column], type(None))
-
-    def assign_physical_light(self, row: int, column: int, physical_light: Optional[LightDriver]):
-        self.lights[row * self.columns + column] = physical_light
-
-    def mark_light_disappeared(self, row: int, column: int):
-        self.lights[row * self.columns + column] = None
-
-    def get_physical_light(self, row, column) -> Optional[LightDriver]:
-        return self.lights[row * self.columns + column]
-
-    def set_light_state(self, row: int, column: int, state: bool) -> None:
-        physical_light = self.get_physical_light(row, column)
-        if not self.design_mode:
-            physical_light.set_light_state(state)
-
-    def get_light_state(self, row: int, column: int):
-        physical_light = self.get_physical_light(row, column)
-        return physical_light.get_light_state()
 
     def read_light_map(self, light_map: list) -> list:
         self.initialize_light_map(light_map)
@@ -251,7 +282,6 @@ class ESPMegaLightGrid:
         self.connected_drivers = {}  # Dictionary to store connected controllers
 
     def _assign_light(self, row_index, column_index, light):
-        print(f"Assigning light at {row_index}, {column_index}, its base topic is {light['base_topic']}, The controller loaded are {self.drivers}")
         if self.design_mode:
             self.connected_drivers[light["base_topic"]] = None
             self.assign_physical_light(row_index, column_index, DummyLightDriver())
@@ -273,14 +303,10 @@ class ESPMegaLightGrid:
 
     def _create_new_driver(self, base_topic: str, pwm_id: int):
         if not self.design_mode:
-            print("Creating new driver")
             driver = ESPMegaStandaloneLightDriver(base_topic, pwm_id, self.light_server, self.light_server_port)
-            print("Created new driver")
         if driver.is_connected():
-            print(f"Adding driver {base_topic} to connected drivers")
             self.connected_drivers[base_topic] = driver
         else:
-            print(f"Adding driver {base_topic} to failed drivers, its exception is {driver.get_exception()}")
             self.failed_drivers[base_topic] = driver.get_exception()
         self.drivers[base_topic] = driver
         return driver
@@ -329,3 +355,13 @@ class ESPMegaLightGrid:
             
             if not isinstance(column["pwm_id"], int):
                 raise ValueError("The pwm_id field must be an integer.")
+
+class HomeAssistantLightGrid(LightGrid):
+    def __init__(self,api_url: str,api_key: str, rows: int = 0, columns: int = 0, design_mode: bool = False):
+        self.api_url = api_url
+        self.api_key = api_key
+        self.rows = rows
+        self.columns = columns
+        self.ha_client = HomeAssistantClient(api_url, api_key)
+        self.lights: list = [None] * rows * columns
+        self.design_mode = design_mode
