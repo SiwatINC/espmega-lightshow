@@ -177,12 +177,17 @@ class ESPMegaMultiController:
         self.drivers = {}
     def get_controller(self, base_topic: str, light_server: str, light_server_port: int, rapid_mode: bool = False) -> ESPMega:
         # Check if the there is a connection to the server
+        print(f"Getting controller for {base_topic}, {light_server}, {light_server_port}")
         if (light_server, light_server_port) not in self.mqtt_connections:
+            print(f"Creating connection for {base_topic}, {light_server}, {light_server_port}")
             # If there is no connection, create one
             self.mqtt_connections[(light_server, light_server_port)] = MQTTClient()
             try:
                 self.mqtt_connections[(light_server, light_server_port)].connect(light_server, light_server_port)
+                self.mqtt_connections[(light_server, light_server_port)].loop_start()
+                print(f"Connected to {light_server}:{light_server_port}")
             except Exception as e:
+                print(f"Failed to connect to {light_server}:{light_server_port}")
                 print(e)
                 return None
         # Check if there is a controller for the base topic and server
