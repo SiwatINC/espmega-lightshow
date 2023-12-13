@@ -3,6 +3,7 @@ from espmega.espmega_r3 import ESPMega_standalone, ESPMega
 import json
 from typing import Optional
 from homeassistant_api import Client as HomeAssistantClient
+from homeassistant_api import errors as HomeAssistantErrors
 from paho.mqtt.client import Client as MQTTClient
 
 # This is the base class for all physical light drivers
@@ -127,7 +128,7 @@ class ESPMegaLightDriver(LightDriver):
             "name": "ESPMega",
             "support_brightness": False,
             "support_color": False,
-            "configuration_parameters": ["light_server", "light_server_port", "pwm_channel"]
+            "configuration_parameters": ["light_server", "light_server_port","base_topic", "pwm_channel"]
         }
 
 
@@ -250,7 +251,11 @@ class HomeAssistantLightDriver(LightDriver):
             self.connected = False
             self.exception = e
             return
-        self.connected = True    
+        except HomeAssistantErrors.UnauthorizedError:
+            self.connected = False
+            self.exception = "Unauthorized"
+            return
+        self.connected = True
 
     def set_light_state(self, state: bool) -> None:
         self.state = state

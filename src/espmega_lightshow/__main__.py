@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 import json
 from tkinter import filedialog
-from espmega_lightshow.drivers import UniversalLightGrid, LightDriver
+from espmega_lightshow.drivers import UniversalLightGrid, LightDriver, ESPMegaLightDriver, HomeAssistantLightDriver
 from dataclasses import dataclass
 import sys
 import json
@@ -519,31 +519,16 @@ def change_light_config(event):
     light_config_window.title("Light Config")
     icon = ImageTk.PhotoImage(icon_image)
     light_config_window.wm_iconphoto(True, icon)
-    light_config_window.resizable(False, False)
-
+    
     # Define variables for the disable checkbox
     enable_var = tk.BooleanVar()
 
     def submit_light_config():
         global light_grid
-        if enable_var.get():
-            base_topic = base_topic_entry.get()
-            pwm_id = pwm_id_entry.get()
-            if base_topic == "":
-                messagebox.showerror("Error", "Please enter a base topic.")
-                return
-            elif pwm_id == "":
-                messagebox.showerror("Error", "Please enter a PWM ID.")
-                return
-            try:
-                pwm_id = int(pwm_id)
-            except ValueError:
-                messagebox.showerror("Error", "The PWM ID must be an integer.")
-                return
-            physical_light_config = {
-                "base_topic": base_topic, "pwm_id": pwm_id}
-        else:
-            physical_light_config = None
+        
+        # TODO Get the light config from the entry fields
+
+        # TODO Config Validation
 
         # Update the light map
         modified_light_map = light_grid.light_map
@@ -575,48 +560,45 @@ def change_light_config(event):
         light_config_window, text=f"Configuring Light at {row}, {column}")
     position_label.pack()
 
-    state = ""
-    if check_light_online(row, column) == -1:
-        state = "Disabled"
-    elif design_mode:
-        state = "Simulated"
-    else:
-        if check_light_online(row, column) == 0:
-            state = "Offline"
-        else:
-            state = "Online"
+    # Because there are many different types of light drivers, we will use a dropdown menu to select the light driver
+    light_driver_label = tk.Label(light_config_window, text="Light Driver")
+    light_driver_label.pack()
+    light_driver_var = tk.StringVar()
+    light_driver_var.set("espmega")
+    # Switch to the correct light driver config frame based on the selected light driver
+    def light_driver_dropdown_callback(*args):
+        if light_driver_var.get() == "espmega":
+            light_driver_config_frame_espmega.pack()
+            light_driver_config_frame_homeassistant.pack_forget()
+        elif light_driver_var.get() == "homeassistant":
+            light_driver_config_frame_homeassistant.pack()
+            light_driver_config_frame_espmega.pack_forget()
+    light_driver_dropdown = tk.OptionMenu(
+        light_config_window, light_driver_var, "espmega", "homeassistant", command=light_driver_dropdown_callback)
+    light_driver_dropdown.pack()
+    # Get a list of all configuration options for each light driver
+    config_optioins = {"espmega": ESPMegaLightDriver.get_driver_properties()["configuration_parameters"], "homeassistant": HomeAssistantLightDriver.get_driver_properties()["configuration_parameters"]}
+    # Create a frame to hold esp mega config options
+    light_driver_config_frame_espmega = tk.Frame(light_config_window)
+    # Create text inputs for each configuration option
+    for config_option in config_optioins["espmega"]:
+        config_option_label = tk.Label(
+            light_driver_config_frame_espmega, text=config_option["name"])
+        config_option_label.pack()
+        config_option_entry = tk.Entry(light_driver_config_frame_espmega)
+        config_option_entry.pack()
 
-    state_label = tk.Label(light_config_window,
-                           text=f"This light is currently: {state}")
-    state_label.pack()
+    # Create a frame to hold home assistant config options
+    light_driver_config_frame_homeassistant = tk.Frame(light_config_window)
+    # Create text inputs for each configuration option
+    for config_option in config_optioins["homeassistant"]:
+        config_option_label = tk.Label(
+            light_driver_config_frame_homeassistant, text=config_option["name"])
+        config_option_label.pack()
+        config_option_entry = tk.Entry(light_driver_config_frame_homeassistant)
+        config_option_entry.pack()
 
-    light_enable_checkbox = tk.Checkbutton(
-        light_config_window, text="Enable", command=checkbox_callback, variable=enable_var)
-    light_enable_checkbox.pack()
-
-    base_topic_label = tk.Label(light_config_window, text="Base Topic")
-    base_topic_label.pack()
-    base_topic_entry = tk.Entry(light_config_window)
-    base_topic_entry.pack()
-
-    pwm_id_label = tk.Label(light_config_window, text="PWM ID")
-    pwm_id_label.pack()
-    pwm_id_entry = tk.Entry(light_config_window)
-    pwm_id_entry.pack()
-
-    submit_button = tk.Button(
-        light_config_window, text="Submit", command=submit_light_config, pady=5)
-    submit_button.pack(pady=5)
-
-    if light_grid.light_map[row][column] != None:
-        light_enable_checkbox.select()
-        base_topic_entry.insert(
-            0, light_grid.light_map[row][column]["base_topic"])
-        pwm_id_entry.insert(0, light_grid.light_map[row][column]["pwm_id"])
-    else:
-        light_enable_checkbox.deselect()
-        base_topic_entry.configure(state="disabled")
-        pwm_id_entry.configure(state="disabled")
+    # Each light driver has different configuration options, different configuration options will be shown depending on the selected light driver
 
     light_config_window.mainloop()
 
