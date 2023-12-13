@@ -465,10 +465,15 @@ class UniversalLightGrid(LightGrid):
         for row_index, row in enumerate(light_map):
             for column_index, light in enumerate(row):
                 # light is a dictionary with fields varying by driver
+                # Is the light disabled?
+                if light is None:
+                    self.assign_physical_light(row_index, column_index, None)
+                    continue
                 # Are we in design mode?
                 # If we are in design mode, we don't need to connect to the drivers, so we can just assign a dummy driver
                 if self.design_mode:
                     self.assign_physical_light(row_index, column_index, DummyLightDriver())
+                    continue
                 # Let's switch on the driver field
                 driver_type = light["driver"]
                 print(light)

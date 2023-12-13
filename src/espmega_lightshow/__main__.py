@@ -339,6 +339,9 @@ def set_tile_state(row: int, column: int, state: bool):
         element.config(bg=COLOR_ON_OFFLINE)
 
 def get_tile_state(row: int, column: int):
+    # If the light is disabled, return disabled
+    if not light_grid.is_installed(row=row, column=column):
+        return LIGHT_DISABLED
     light = light_grid.get_physical_light(row, column)
     state = light.get_light_state()
     if state == LightDriver.LIGHT_STATE_ON or state == LightDriver.LIGHT_STATE_ON_UNCONTROLLED:
@@ -509,7 +512,7 @@ def render_frame(frame: list):
 
 def change_light_config(event):
     # Get a list of all configuration options for each light driver
-    config_options = {"espmega": ESPMegaLightDriver.get_driver_properties()["configuration_parameters"], "homeassistant": HomeAssistantLightDriver.get_driver_properties()["configuration_parameters"]}
+    config_options = {"disabled":[],"espmega": ESPMegaLightDriver.get_driver_properties()["configuration_parameters"], "homeassistant": HomeAssistantLightDriver.get_driver_properties()["configuration_parameters"]}
     config_vars = {}
     config_frames = {}
     global script_active
@@ -523,6 +526,7 @@ def change_light_config(event):
     light_config_window.title("Light Config")
     icon = ImageTk.PhotoImage(icon_image)
     light_config_window.wm_iconphoto(True, icon)
+    light_config_window.resizable(False, False)
 
     def submit_light_config():
         global light_grid
@@ -541,6 +545,10 @@ def change_light_config(event):
                 messagebox.showerror(
                     "Error", f"Please fill in the {config_option} field.")
                 return
+
+        # If the light is disabled, set the light config to None
+        if driver == "disabled":
+            physical_light_config = None
 
         # Update the light map
         modified_light_map = light_grid.light_map
@@ -561,6 +569,9 @@ def change_light_config(event):
         light_config_window.destroy()
 
     def get_driver_from_json():
+        # If the light is disabled, return disabled
+        if light_grid.light_map[row][column] == None:
+            return "disabled"
         return light_grid.light_map[row][column]["driver"]
 
     def load_config_to_entry_fields(driver):
@@ -585,7 +596,12 @@ def change_light_config(event):
             config_vars[driver][config_var].set(
                 light_config[config_var])
             root.update()
-
+    
+    def resize_window():
+        # Get Number of Config Options
+        driver = light_driver_var.get()
+        num_config_options = len(config_options[driver])
+        light_config_window.geometry(f"250x{90+num_config_options*40}")
 
     def light_driver_dropdown_callback(*args):
         # Hide all the config frames
@@ -596,6 +612,8 @@ def change_light_config(event):
         config_frames[driver].grid(row=2, column=0, columnspan=2)
         # Load Config to Entry Fields
         load_config_to_entry_fields(driver)
+        resize_window()
+        root.update()
 
     position_label = ttk.Label(
         light_config_window, text=f"Configuring Light at {row}, {column}")
@@ -607,8 +625,9 @@ def change_light_config(event):
     light_driver_var = tk.StringVar()
     light_driver_var.set("espmega")
     # Switch to the correct light driver config frame based on the selected light driver
+    drivers = list(config_options.keys())
     light_driver_dropdown = tk.OptionMenu(
-        light_config_window, light_driver_var, "espmega", "homeassistant",command=light_driver_dropdown_callback)
+        light_config_window, light_driver_var, *drivers,command=light_driver_dropdown_callback)
     light_driver_dropdown.grid(row=1, column=1)
 
 
@@ -620,10 +639,10 @@ def change_light_config(event):
             config_label_text = config_option.replace("_", " ").title()
             config_option_label = ttk.Label(
                 config_frames[device], text=config_label_text)
-            config_option_label.pack()
+            config_option_label.pack(padx=20, anchor="center")
             config_option_var = tk.StringVar()
-            config_option_entry = ttk.Entry(config_frames[device], textvariable=config_option_var)
-            config_option_entry.pack()
+            config_option_entry = ttk.Entry(config_frames[device], textvariable=config_option_var, width=35)
+            config_option_entry.pack(padx=20, anchor="center")
             config_vars[device][config_option] = config_option_var
 
     # Each light driver has different configuration options, different configuration options will be shown depending on the selected light driver
@@ -638,7 +657,8 @@ def change_light_config(event):
     # Create a button to save the light config and close the window
     submit_button = ttk.Button(
         light_config_window, text="Save", command=submit_light_config)
-    submit_button.grid(row=3, column=0, columnspan=2,pady=5)
+    submit_button.grid(row=3, column=0, columnspan=2,pady=5,padx=85)
+    resize_window()
     light_config_window.mainloop()
 
 
