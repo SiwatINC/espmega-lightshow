@@ -252,7 +252,7 @@ class HomeAssistantLightDriver(LightDriver):
             self.light_api.turn_on(entity_id=self.entity_id) if state else self.light_api.turn_off(entity_id=self.entity_id)
 
     def get_light_state(self) -> bool:
-        return LightDriver.state_to_multistate(self.state)
+        return self.state_to_multistate(self.state)
 
     @staticmethod
     def get_driver_properties() -> dict:
@@ -486,6 +486,13 @@ class UniversalLightGrid(LightGrid):
                     driver = HomeAssistantLightDriver(ha_client, light["entity_id"])
                     # We will then assign the driver to the light
                     self.assign_physical_light(row_index, column_index, driver)
+    def read_light_map_from_file(self, filename: str):
+        try:
+            with open(filename, "r") as file:
+                light_map = json.load(file)
+            self.read_light_map(light_map)
+        except FileNotFoundError:
+            raise FileNotFoundError("The light map file does not exist.")
     def initialize_light_map(self, light_map):
         self.light_map = light_map
         self.rows = len(light_map)

@@ -3,30 +3,30 @@
         {
             "driver": "espmega",
             "light_server": "192.168.0.26",
-            "light_sever_port": 1883,
-            "base_topic": "/espmega",
+            "light_server_port": 1883,
+            "base_topic": "/espmega/ProR3",
             "pwm_id": 0
         },
         {
             "driver": "homeassistant",
-            "api_url": "http://192.168.0.26",
-            "api_key": "YOUR_API_KEY",
-            "entity_id": "light.light0"
+            "api_url": "http://192.168.0.26/api",
+            "api_key": ha_api_key,
+            "entity_id": "light.laboratory_ceiling_light"
         }
     ],
     [
         {
             "driver": "espmega",
             "light_server": "192.168.0.26",
-            "light_sever_port": 1883,
-            "base_topic": "/espmega",
+            "light_server_port": 1883,
+            "base_topic": "/espmega/ProR3",
             "pwm_id": 1
         },
         {
             "driver": "homeassistant",
-            "api_url": "http://192.168.0.26",
-            "api_key": "YOUR_API_KEY",
-            "entity_id": "light.light0"
+            "api_url": "http://192.168.0.26/api",
+            "api_key": ha_api_key,
+            "entity_id": "light.laboratory_light_strip"
         }
     ]
 ]

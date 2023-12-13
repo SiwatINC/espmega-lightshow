@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 import json
 from tkinter import filedialog
-from espmega_lightshow.drivers import ESPMegaLightGrid, LightDriver
+from espmega_lightshow.drivers import UniversalLightGrid, LightDriver
 from dataclasses import dataclass
 import sys
 import json
@@ -34,7 +34,10 @@ COLOR_ON_OFFLINE = "red"
 MIN_BPM = 20
 MAX_BPM = 600
 CONFIG_FILE = "config.json"
-LightGrid = ESPMegaLightGrid
+
+# Choose the light grid class to use
+# The UniversalLightGrid class is recommended
+LightGrid = UniversalLightGrid
 
 # Messagebox Constants
 MSG_LOAD_ERROR_TITLE = "Load Error"
@@ -293,7 +296,7 @@ def color_to_state(color: str):
 
 
 # Load light map from light_map.json
-light_grid = LightGrid(light_server, light_server_port, design_mode=design_mode)
+light_grid = LightGrid(design_mode=design_mode)
 light_grid.read_light_map_from_file(filename=light_map_file)
 rows = light_grid.rows
 columns = light_grid.columns
@@ -550,7 +553,7 @@ def change_light_config(event):
             json.dump(light_grid.light_map, file)
 
         # Reload the light_grid
-        light_grid = LightGrid(light_server, light_server_port, design_mode=design_mode)
+        light_grid = LightGrid(design_mode=design_mode)
         light_grid.read_light_map_from_file(filename=light_map_file)
 
         render_frame_at_index(slider.get())
@@ -645,7 +648,7 @@ def reconnect_light_controllers():
     global light_grid
     global design_mode
     old_light_map = light_grid.light_map
-    light_grid = LightGrid(light_server, light_server_port, design_mode=design_mode)
+    light_grid = LightGrid(design_mode=design_mode)
     light_grid.read_light_map(old_light_map)
     render_frame_at_index(slider.get())
     root.update()
