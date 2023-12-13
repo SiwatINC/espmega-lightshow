@@ -1,6 +1,26 @@
 # Request administrator privileges
 if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) { Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit }
 
+# Ask if the user wants to install home assistant api module
+# Doing so will require python version 3.11.2
+$installHomeAssistantApi = $false
+$pythonInstalled = $false
+while ($true) {
+    $installHomeAssistantApi = Read-Host "Do you want to install the home assistant api module? (y/n)"
+    if ($installHomeAssistantApi -eq "y" -or $installHomeAssistantApi -eq "n") {
+        break
+    }
+}
+
+# Check if python is installed
+try {
+    $pythonVersion = (Get-Command python).Version
+    $pythonInstalled = $true
+}
+catch {
+    $pythonInstalled = $false
+}
+
 # Install Chocolatey
 Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 
@@ -9,8 +29,20 @@ $env:ChocolateyInstall = Convert-Path "$((Get-Command choco).Path)\..\.."
 Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
 refreshenv
 
-# Install Python3 and espmega_lightshow
-choco install -y python3
+# Check if python version is 3.11.2150.1013
+if ($pythonInstalled) {
+    if ($pythonVersion -ne "3.11.2150.1013") {
+        Write-Output "Python version is not 3.11.2150.1013, installing python 3.11.2150.1013"
+        # If home assistant api module is to be installed, install python 3.11.2150.1013
+        if ($installHomeAssistantApi) {
+            # Install python 3.11.2150.1013
+            choco install -y python --version 3.11.2
+        }
+    }
+}
+else {
+    choco install -y python --version 3.11.2
+}
 pip3 install --upgrade espmega_lightshow
 
 # Get python.exe path

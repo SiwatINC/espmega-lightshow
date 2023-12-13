@@ -302,12 +302,14 @@ def load_light_grid():
     except FileNotFoundError:
         messagebox.showerror(
             MSG_FILE_NOT_FOUND_TITLE, "The light map file could not be found.")
+        sys.exit(0)
     except json.decoder.JSONDecodeError:
         messagebox.showerror(
             MSG_LOAD_ERROR_TITLE, "The light map file is corrupted.")
+        sys.exit(0)
     except DriverDependencyNotMetError as e:
         messagebox.showerror(MSG_LOAD_ERROR_TITLE, e)
-
+        sys.exit(0)
 
 # Load light map from light_map.json
 load_light_grid()
