@@ -5,6 +5,7 @@ from typing import Optional
 from homeassistant_api import Client as HomeAssistantClient
 from homeassistant_api import errors as HomeAssistantErrors
 from paho.mqtt.client import Client as MQTTClient
+from threading import Thread
 
 # This is the base class for all physical light drivers
 class LightDriver(ABC):
@@ -244,6 +245,7 @@ class HomeAssistantLightDriver(LightDriver):
         # Connect to Home Assistant
         self.ha = ha
         self.entity_id = entity_id
+        self.command_waiting = False
         try:
             self.light_api = ha.get_domain("light")
         except Exception as e:
@@ -257,14 +259,22 @@ class HomeAssistantLightDriver(LightDriver):
             return
         self.connected = True
 
+    def _set_state_thread(self, state: bool):
+        if self.command_waiting:
+            return
+        try:
+            self.command_waiting = True
+            self.light_api.turn_on(entity_id=self.entity_id) if state else self.light_api.turn_off(entity_id=self.entity_id)
+            self.command_waiting = False
+        except Exception as e:
+            print(e)
+            self.connected = False
+            self.exception = e
+            self.command_waiting = False
+
     def set_light_state(self, state: bool) -> None:
         self.state = state
-        if self.connected:
-            try:
-                self.light_api.turn_on(entity_id=self.entity_id) if state else self.light_api.turn_off(entity_id=self.entity_id)
-            except Exception as e:
-                print(e)
-                self.connected = False
+        Thread(target=self._set_state_thread, args=(state,)).start()
 
     def get_light_state(self) -> bool:
         return self.state_to_multistate(self.state)
