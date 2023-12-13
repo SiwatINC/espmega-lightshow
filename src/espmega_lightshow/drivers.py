@@ -241,15 +241,25 @@ class DummyLightDriver(LightDriver):
 class HomeAssistantLightDriver(LightDriver):
     def __init__(self, ha: HomeAssistantClient, entity_id: str):
         # Connect to Home Assistant
-        self.light_api = ha.get_domain("light")
         self.ha = ha
         self.entity_id = entity_id
+        try:
+            self.light_api = ha.get_domain("light")
+        except Exception as e:
+            print(e)
+            self.connected = False
+            self.exception = e
+            return
         self.connected = True    
 
     def set_light_state(self, state: bool) -> None:
         self.state = state
         if self.connected:
-            self.light_api.turn_on(entity_id=self.entity_id) if state else self.light_api.turn_off(entity_id=self.entity_id)
+            try:
+                self.light_api.turn_on(entity_id=self.entity_id) if state else self.light_api.turn_off(entity_id=self.entity_id)
+            except Exception as e:
+                print(e)
+                self.connected = False
 
     def get_light_state(self) -> bool:
         return self.state_to_multistate(self.state)
@@ -431,16 +441,6 @@ class ESPMegaLightGrid(LightGrid):
             
             if not isinstance(column["pwm_id"], int):
                 raise ValueError("The pwm_id field must be an integer.")
-
-class HomeAssistantLightGrid(LightGrid):
-    def __init__(self,api_url: str,api_key: str, rows: int = 0, columns: int = 0, design_mode: bool = False):
-        self.api_url = api_url
-        self.api_key = api_key
-        self.rows = rows
-        self.columns = columns
-        self.ha_client = HomeAssistantClient(api_url, api_key)
-        self.lights: list = [None] * rows * columns
-        self.design_mode = design_mode
 
 # A universal light grid is a light grid that can use any driver
 class UniversalLightGrid(LightGrid):
