@@ -23,7 +23,36 @@ import subprocess
 import re
 from PIL import Image, ImageTk
 
+# Constants Definitions
+LIGHT_DISABLED = -1
+LIGHT_OFF = 0
+LIGHT_ON = 1
+COLOR_ON = "white"
+COLOR_OFF = "gray"
+COLOR_DISABLED = "gray12"
+COLOR_OFF_OFFLINE = "brown4"
+COLOR_ON_OFFLINE = "red"
+MIN_BPM = 20
+MAX_BPM = 600
+CONFIG_FILE = "config.json"
 LightGrid = ESPMegaLightGrid
+
+# Messagebox Constants
+MSG_LOAD_ERROR_TITLE = "Load Error"
+MSG_FILE_NOT_FOUND_TITLE = "The file could not be found."
+MSG_SCRIPT_ERROR_TITLE = "Script Error"
+
+# File Dialog Constants
+FILE_TYPE_JSON = ("JSON Files", "*.json")
+FILE_TYPE_PYTHON = ("Python Files", "*.py")
+
+# Playback Status Constants
+PLAYBACK_STATUS_STOPPED = "Status: Stopped"
+PLAYBACK_STATUS_PLAYING = "Status: Playing"
+PLAYBACK_STATUS_SCRIPTED = "Status: Scripted"
+
+# Window Constants
+WINDOW_TITLE = "ESPMega Light Show"
 
 def restart():
     python = sys.executable
@@ -56,7 +85,7 @@ logo_file = os.path.join(os.path.dirname(__file__), "logo.png")
 
 # Load config.json if it exists
 try:
-    with open("config.json", "r") as file:
+    with open(CONFIG_FILE, "r") as file:
         config = json.load(file)
     light_server = config["light_server"]
     light_server_port = config["light_server_port"]
@@ -73,7 +102,7 @@ except FileNotFoundError:
     design_mode = False
 except KeyError:
     # Delete the config file if it is corrupted
-    os.remove("config.json")
+    os.remove(CONFIG_FILE)
     light_server = ""
     light_server_port = 1883
     rapid_mode = False
@@ -122,8 +151,8 @@ def submit_config():
     if light_map_file == "":
         messagebox.showerror("Error", "Please select a light map file.")
         return
-    # Save the config to config.json
-    with open("config.json", "w") as file:
+    # Save the config to CONFIG_FILE
+    with open(CONFIG_FILE, "w") as file:
         json.dump({"light_server": light_server, "light_server_port": light_server_port,
                   "rapid_mode": rapid_mode, "light_map_file": light_map_file, "design_mode": design_mode,
                   "script_quick_load_slots": script_quick_load_slots, "animation_quick_load_slots": animation_quick_load_slots}, file)
@@ -134,7 +163,7 @@ def submit_config():
 def open_light_map_file_chooser_dialog():
     global light_map_file
     light_map_file = filedialog.askopenfilename(
-        filetypes=[("JSON Files", "*.json")])
+        filetypes=[FILE_TYPE_JSON])
     light_map_button.config(text=light_map_file)
 
 # Create a label for the title
@@ -217,7 +246,7 @@ def open_generate_light_map_template_window():
         light_map = [[None]*columns]*rows
         # Ask the user where to save the light map template
         filename = filedialog.asksaveasfilename(
-            defaultextension=".json", filetypes=[("JSON Files", "*.json")])
+            defaultextension=".json", filetypes=[FILE_TYPE_JSON])
         with open(filename, "w") as file:
             json.dump(light_map, file)
         light_map_generator_window.destroy()
@@ -245,22 +274,6 @@ root.mainloop()
 # Exit the program if the user closes the window
 if not configured:
     sys.exit(0)
-
-# Light state constants
-LIGHT_DISABLED = -1
-LIGHT_OFF = 0
-LIGHT_ON = 1
-COLOR_ON = "white"
-COLOR_OFF = "gray"
-COLOR_DISABLED = "gray12"
-COLOR_OFF_OFFLINE = "brown4"
-COLOR_ON_OFFLINE = "red"
-
-ENABLE_PHYSICAL_SYNCRONIZATION = True
-
-MIN_BPM = 20
-MAX_BPM = 600
-
 
 def state_to_color(state: int):
     if state == LIGHT_ON:
@@ -390,7 +403,7 @@ def delete_frame():
 
 def save_animation():
     filename = filedialog.asksaveasfilename(
-        defaultextension=".json", filetypes=[("JSON Files", "*.json")])
+        defaultextension=".json", filetypes=[FILE_TYPE_JSON])
     if filename:
         with open(filename, "w") as file:
             json.dump(frames, file)
@@ -426,7 +439,7 @@ def play_frames():
     if current_frame == len(frames)-1 and not repeat_var.get():
         playback_active = False
         return
-    playback_status_label.config(text="Status: Playing")
+    playback_status_label.config(text=PLAYBACK_STATUS_PLAYING)
     start_time = perf_counter()
     while current_frame < len(frames):
         if not playback_active:
@@ -462,7 +475,7 @@ def play_frames():
         slider.set(current_frame)
         play_frames()
     else:
-        playback_status_label.config(text="Status: Stopped")
+        playback_status_label.config(text=PLAYBACK_STATUS_STOPPED)
 
 
 
@@ -488,7 +501,6 @@ def scrub_frames(value):
 def render_frame(frame: list):
     for i in range(rows):
         for j in range(columns):
-            element = lightgrid_frame.grid_slaves(row=i, column=j)[0]
             set_tile_state(i, j, frame[i][j])
 
 
@@ -499,7 +511,6 @@ def change_light_config(event):
         return
     row = event.widget.grid_info()["row"]
     column = event.widget.grid_info()["column"]
-    physical_light = light_grid.get_physical_light(row, column)
     light_config_window = tk.Toplevel(root)
     light_config_window.geometry("250x190")
     light_config_window.title("Light Config")
@@ -542,8 +553,6 @@ def change_light_config(event):
         # Reload the light_grid
         light_grid = LightGrid(light_server, light_server_port, design_mode=design_mode)
         light_grid.read_light_map_from_file(filename=light_map_file)
-        rows = light_grid.rows
-        columns = light_grid.columns
 
         render_frame_at_index(slider.get())
         root.update()
@@ -647,13 +656,13 @@ frames = [[[0]*light_grid.columns]*light_grid.rows]
 
 root = tk.Tk()
 
-root.title("ESPMega Light Show")
+root.title(WINDOW_TITLE)
 icon = ImageTk.PhotoImage(icon_image)
 root.wm_iconphoto(True, icon)
 
 
 # Create a label for the title
-title_label = ttk.Label(root, text="ESPMega Light Show", font=("Helvetica", 36, "bold"), foreground="gray26")
+title_label = ttk.Label(root, text=WINDOW_TITLE, font=("Helvetica", 36, "bold"), foreground="gray26")
 title_label.pack()
 
 # Create another frame to the bottom
@@ -672,7 +681,7 @@ playback_label = ttk.Label(
 playback_label.pack()
 
 # Create a text label to show the current playback status
-playback_status_label = ttk.Label(playback_status_frame, text="Status: Stopped")
+playback_status_label = ttk.Label(playback_status_frame, text=PLAYBACK_STATUS_STOPPED)
 playback_status_label.pack()
 
 playback_status_frame.pack(side="left")
@@ -885,34 +894,34 @@ for i in range(rows):
 
 def load_animation():
     global frames
-    filename = filedialog.askopenfilename(filetypes=[("JSON Files", "*.json")])
+    filename = filedialog.askopenfilename(filetypes=[FILE_TYPE_JSON])
     if filename:
         try:
             with open(filename, "r") as file:
                 temp_frames = json.load(file)
                 # Check if the animation is empty
                 if len(temp_frames) == 0:
-                    raise Exception("Animation cannot be empty.")
+                    raise ValueError("Animation cannot be empty.")
                 # Check if the animation has the same dimensions as the light map
                 if len(temp_frames[0]) != len(light_grid.light_map) or len(temp_frames[0][0]) != len(light_grid.light_map[0]):
-                    raise Exception(
+                    raise ValueError(
                         "The animation must have the same dimensions as the light map.")
                 # Check the animation for invalid frames
                 for frame in temp_frames:
                     for row in frame:
                         for light in row:
                             # Check if the light is a boolean value or an integer value of 0 or 1
-                            if type(light) != bool and type(light) != int or(type(light) == int and (light != 0 and light != 1)):
-                                raise Exception(
+                            if not isinstance(light, bool) and not isinstance(light, int) or (isinstance(light, int) and (light != 0 and light != 1)):
+                                raise ValueError(
                                     "The animation must only contain boolean values.")
                 frames = temp_frames
             slider.config(to=len(frames)-1)  # Update the slider range
             slider.set(0)  # Set the slider value to the first frame
         except FileNotFoundError:
             messagebox.showerror(
-                "File Not Found", f"The file {filename} could not be found.")
+                MSG_FILE_NOT_FOUND_TITLE, f"The file {filename} could not be found.")
         except Exception as e:
-            messagebox.showerror("Load Error", f"{e}\nAre you sure this is a valid animation file?")
+            messagebox.showerror(MSG_LOAD_ERROR_TITLE, f"{e}\nAre you sure this is a valid animation file?")
 
 def new_animation():
     global frames
@@ -940,16 +949,16 @@ def run_script(filename: str):
             messagebox.showerror(
                 "File Not Found", f"The file {filename} could not be found.")
         except Exception as e:
-            messagebox.showerror("Load Error", f"{e}\nAre you sure this is a valid Python script?")
+            messagebox.showerror(MSG_LOAD_ERROR_TITLE, f"{e}\nAre you sure this is a valid Python script?")
     # At this point, the class "CustomUserScript" should be defined
     # Check if the class is defined
-    if not "CustomUserScript" in locals():
-        messagebox.showerror("Script Error", "The script must define a class called CustomUserScript.")
+    if "CustomUserScript" not in locals():
+        messagebox.showerror(MSG_SCRIPT_ERROR_TITLE, "The script must define a class called CustomUserScript.")
         return
 
     # Check if the class is a subclass of UserScript
     if not issubclass(CustomUserScript, UserScript):
-        messagebox.showerror("Script Error", "The class CustomUserScript must be a subclass of UserScript.")
+        messagebox.showerror(MSG_SCRIPT_ERROR_TITLE, "The class CustomUserScript must be a subclass of UserScript.")
         return
 
     def logger_func(message: any):
@@ -990,7 +999,7 @@ def run_script(filename: str):
     for i in range(5):
         quick_run_menu.entryconfig(i, state="disabled")
         quick_run_menu.entryconfig(i+7, state="disabled")
-    playback_status_label.config(text="Status: Scripted")
+    playback_status_label.config(text=PLAYBACK_STATUS_SCRIPTED)
 
     script_active = True
 
@@ -1013,7 +1022,7 @@ def run_script(filename: str):
     script_name_label.pack()
 
     # Add a label to display the script status
-    script_status_label = ttk.Label(top_frame, text="Status: Running")
+    script_status_label = ttk.Label(top_frame, text=PLAYBACK_STATUS_SCRIPTED)
     script_status_label.pack()
 
     # Add a label to display the current frame number
@@ -1044,7 +1053,7 @@ def run_script(filename: str):
         start_time = perf_counter()
         while script.executing:
             if perf_counter() - start_time >= 15000:
-                messagebox.showerror("Script Error", "The script is taking too long to stop.\nProgram will now restart to prevent the program from freezing.")
+                messagebox.showerror(MSG_SCRIPT_ERROR_TITLE, "The script is taking too long to stop.\nProgram will now restart to prevent the program from freezing.")
                 restart()
             root.update()
             root.update_idletasks()
@@ -1091,7 +1100,7 @@ def run_script(filename: str):
             try:
                 script.__draw_frame__(time_epoch)
             except Exception as e:
-                messagebox.showerror("Script Error", traceback.format_exc())
+                messagebox.showerror(MSG_SCRIPT_ERROR_TITLE, traceback.format_exc())
                 # Stop the script
                 script.active = False
                 # Set the ignore execution flag to true to prevent the program from waiting for the script to stop
@@ -1108,7 +1117,7 @@ def run_script(filename: str):
     # script.execuiting is meant to be set by the script itself to indicate that it is still running
     while script.executing and not ignore_execution_flag:
         if perf_counter() - stop_time >= stop_wait_time:
-            messagebox.showerror("Script Error", "The script is taking too long to stop.\nProgram will now restart to prevent the program from freezing.")
+            messagebox.showerror(MSG_SCRIPT_ERROR_TITLE, "The script is taking too long to stop.\nProgram will now restart to prevent the program from freezing.")
             restart()
         root.update()
         root.update_idletasks()
@@ -1134,14 +1143,14 @@ def run_script(filename: str):
     for i in range(5):
         quick_run_menu.entryconfig(i, state="normal")
         quick_run_menu.entryconfig(i+7, state="normal")
-    playback_status_label.config(text="Status: Stopped")
+    playback_status_label.config(text=PLAYBACK_STATUS_STOPPED)
     script_active = False
 render_frame_at_index(0)
 
 def generate_template_script():
     # Ask the user where to save the script
     filename = filedialog.asksaveasfilename(
-        defaultextension=".py", filetypes=[("Python Files", "*.py")])
+        defaultextension=".py", filetypes=[FILE_TYPE_PYTHON])
     # Copy the template script from the module directory to the specified location
     if filename:
         try:
@@ -1153,7 +1162,7 @@ root.bind("<Configure>", resize_elements)
 
 
 def run_script_prompt():
-    filename = filedialog.askopenfilename(filetypes=[("Python Files", "*.py")])
+    filename = filedialog.askopenfilename(filetypes=[FILE_TYPE_PYTHON])
     run_script(filename)
 
 # Create a menu bar
@@ -1195,18 +1204,18 @@ def load_animation_at_slot(slot: int):
                 temp_frames = json.load(file)
                 # Check if the animation is empty
                 if len(temp_frames) == 0:
-                    raise Exception("Animation cannot be empty.")
+                    raise ValueError("Animation cannot be empty.")
                 # Check if the animation has the same dimensions as the light map
                 if len(temp_frames[0]) != len(light_grid.light_map) or len(temp_frames[0][0]) != len(light_grid.light_map[0]):
-                    raise Exception(
+                    raise ValueError(
                         "The animation must have the same dimensions as the light map.")
                 # Check the animation for invalid frames
                 for frame in temp_frames:
                     for row in frame:
                         for light in row:
                             # Check if the light is a boolean value or an integer value of 0 or 1
-                            if type(light) != bool and type(light) != int or(type(light) == int and (light != 0 and light != 1)):
-                                raise Exception(
+                            if not isinstance(light, (bool, int)) or (isinstance(light, int) and light not in (0, 1)):
+                                raise ValueError(
                                     "The animation must only contain boolean values.")
                 frames = temp_frames
             slider.config(to=len(frames)-1)  # Update the slider range
@@ -1217,7 +1226,7 @@ def load_animation_at_slot(slot: int):
             messagebox.showerror(
                 "File Not Found", f"The file {filename} could not be found.")
         except Exception as e:
-            messagebox.showerror("Load Error", f"{e}\nAre you sure this is a valid animation file?")
+            messagebox.showerror(MSG_LOAD_ERROR_TITLE, f"{e}\nAre you sure this is a valid animation file?")
         render_frame_at_index(0)
         if (instant_playback_var.get()):
             play_frames()
@@ -1226,7 +1235,7 @@ def load_animation_at_slot(slot: int):
 def save_script_at_slot(slot: int):
     global script_quick_load_slots
     # Ask the user where the script is located
-    filename = filedialog.askopenfilename(filetypes=[("Python Files", "*.py")])
+    filename = filedialog.askopenfilename(filetypes=[FILE_TYPE_PYTHON])
     if filename:
         script_quick_load_slots[slot-1] = filename
         quick_run_menu.entryconfig(slot+6, label=f"Script Slot {slot}: {filename.split('/')[-1]}")
@@ -1235,7 +1244,7 @@ def save_script_at_slot(slot: int):
 def save_animation_at_slot(slot: int):
     global animation_quick_load_slots
     # Ask the user where the animation is located
-    filename = filedialog.askopenfilename(filetypes=[("JSON Files", "*.json")])
+    filename = filedialog.askopenfilename(filetypes=[FILE_TYPE_JSON])
     if filename:
         animation_quick_load_slots[slot-1] = filename
         quick_run_menu.entryconfig(slot-1, label=f"Animation Slot {slot}: {filename.split('/')[-1]}")
@@ -1312,7 +1321,7 @@ def open_about_popup():
     about_popup.resizable(False, False)
 
     # Create a label for the title
-    title_label = ttk.Label(about_popup, text="ESPMega Light Show", font=("Arial", 24))
+    title_label = ttk.Label(about_popup, text=WINDOW_TITLE, font=("Arial", 24))
     title_label.pack()
 
     # Create a label for the author
@@ -1420,7 +1429,7 @@ root.bind("<Right>", handle_right_arrow)
 root.mainloop()
 
 # Write Quick Load data to file
-with open("config.json", "w") as file:
+with open(CONFIG_FILE, "w") as file:
     json.dump({"light_server": light_server, "light_server_port": light_server_port,
                 "rapid_mode": rapid_mode, "light_map_file": light_map_file, "design_mode": design_mode,
                 "script_quick_load_slots": script_quick_load_slots, "animation_quick_load_slots": animation_quick_load_slots}, file)
