@@ -3,6 +3,7 @@ from tkinter import ttk
 import json
 from tkinter import filedialog
 from espmega.espmega_r3 import ESPMega_standalone, ESPMega_slave, ESPMega
+from espmega_lightshow.drivers import ESPMegaLightGrid, ESPMegaLightDriver, ESPMegaStandaloneLightDriver
 from dataclasses import dataclass
 import sys
 import json
@@ -22,121 +23,7 @@ import subprocess
 import re
 from PIL import Image, ImageTk
 
-@dataclass
-class PhysicalLightEntity:
-    controller: ESPMega
-    pwm_channel: int
-
-class LightGrid:
-    def __init__(self, rows: int = 0, columns: int = 0, design_mode: bool = False):
-        self.rows = rows
-        self.columns = columns
-        self.lights: list = [None] * rows * columns
-        self.controllers = {}
-        self.design_mode = design_mode
-
-    def assign_physical_light(self, row: int, column: int, physical_light: PhysicalLightEntity):
-        self.lights[row * self.columns + column] = physical_light
-
-    def get_physical_light(self, row, column):
-        return self.lights[row * self.columns + column]
-
-    def set_light_state(self, row: int, column: int, state: bool):
-        physical_light = self.get_physical_light(row, column)
-        if physical_light and not self.design_mode:
-            physical_light.controller.digital_write(
-                physical_light.pwm_channel, state)
-
-    def create_physical_light(self, row: int, column: int, controller: ESPMega, pwm_channel: int):
-        self.assign_physical_light(
-            row, column, PhysicalLightEntity(controller, pwm_channel))
-
-    def get_light_state(self, row: int, column: int):
-        physical_light = self.get_physical_light(row, column)
-        if physical_light:
-            return physical_light.controller.get_pwm_state(physical_light.pwm_channel)
-        else:
-            return None
-
-    def read_light_map(self, light_map: list):
-        self.light_map = light_map
-        self.rows = len(light_map)
-        self.columns = len(light_map[0])
-        self.lights = [None] * self.rows * self.columns
-        self.controllers = {}  # Dictionary to store existing controllers
-        self.failed_controllers  = {}  # Dictionary to store failed controllers
-        self.connected_controllers = {}  # Dictionary to store connected controllers
-        for row_index, row in enumerate(light_map):
-            for column_index, light in enumerate(row):
-                if light is None:
-                    self.assign_physical_light(row_index, column_index, None)
-                else:
-                    base_topic = light["base_topic"]
-                    pwm_id = light["pwm_id"]
-
-                    try:
-                        if base_topic in self.controllers:
-                            controller = self.controllers[base_topic]
-                        elif base_topic in self.failed_controllers:
-                            self.assign_physical_light(row_index, column_index, None)
-                        else:
-                            if not self.design_mode:
-                                controller = ESPMega_standalone(
-                                    base_topic, light_server, light_server_port)
-                                if rapid_mode:
-                                    controller.enable_rapid_response_mode()
-                                self.connected_controllers[base_topic] = controller
-                            else:
-                                controller = None
-                            self.controllers[base_topic] = controller
-                        self.create_physical_light(
-                            row_index, column_index, controller, pwm_id)
-                        self.set_light_state(row_index, column_index, False)
-                    except Exception as e:
-                        self.failed_controllers[base_topic] = e
-                        self.assign_physical_light(
-                            row_index, column_index, None)
-        # Summarize the failed controllers
-        if len(self.failed_controllers) > 0:
-            error_message = "The following controllers failed to connect:\n"
-            for base_topic, error in self.failed_controllers.items():
-                error_message += f"{base_topic}: {error}\n"
-            messagebox.showerror("Controller Error", error_message+"Please note that the controllers must be connected to the network and running the ESPMega firmware.\n\nYou may continue without these lights, but they will not be able to be controlled.")
-
-    def read_light_map_from_file(self, filename: str):
-        try:
-            with open(filename, "r") as file:
-                light_map = json.load(file)
-            # Check if the light map is valid
-            if len(light_map) == 0:
-                raise Exception("Light map cannot be empty.")
-            if len(light_map[0]) == 0:
-                raise Exception("Light map cannot be empty.")
-            for row in light_map:
-                if len(row) != len(light_map[0]):
-                    raise Exception(
-                        "All rows in the light map must have the same length.")
-                for column in row:
-                    if column != None:
-                        if "base_topic" not in column:
-                            raise Exception(
-                                "The base_topic field is missing from a light.")
-                        if "pwm_id" not in column:
-                            raise Exception(
-                                "The pwm_id field is missing from a light.")
-                        if type(column["base_topic"]) != str:
-                            raise Exception(
-                                "The base_topic field must be a string.")
-                        if type(column["pwm_id"]) != int:
-                            raise Exception(
-                                "The pwm_id field must be an integer.")
-            self.read_light_map(light_map)
-        except FileNotFoundError:
-            messagebox.showerror(
-                "File Not Found", f"The file {filename} could not be found.")
-        except Exception as e:
-            messagebox.showerror("Error", str(e))
-            sys.exit(1)
+LightGrid = ESPMegaLightGrid
 
 def restart():
     python = sys.executable
@@ -394,7 +281,7 @@ def color_to_state(color: str):
 
 
 # Load light map from light_map.json
-light_grid = LightGrid(design_mode=design_mode)
+light_grid = LightGrid(light_server, light_server_port, design_mode=design_mode)
 light_grid.read_light_map_from_file(filename=light_map_file)
 rows = light_grid.rows
 columns = light_grid.columns

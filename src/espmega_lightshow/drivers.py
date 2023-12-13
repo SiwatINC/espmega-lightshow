@@ -163,7 +163,7 @@ class ESPMegaLightGrid:
         self.initialize_light_map(light_map)
         for row_index, row in enumerate(light_map):
             for column_index, light in enumerate(row):
-                self.__assign_light(row_index, column_index, light)
+                self._assign_light(row_index, column_index, light)
         return [self.connected_drivers, self.failed_drivers]
 
     def initialize_light_map(self, light_map):
@@ -172,12 +172,12 @@ class ESPMegaLightGrid:
         self.columns = len(light_map[0])
         self.lights = [None] * self.rows * self.columns
         self.controllers = {}  # Dictionary to store existing controllers
-        self.failed_controllers = {}  # Dictionary to store failed controllers
-        self.connected_controllers = {}  # Dictionary to store connected controllers
+        self.failed_drivers = {}  # Dictionary to store failed controllers
+        self.connected_drivers = {}  # Dictionary to store connected controllers
 
     def _assign_light(self, row_index, column_index, light):
         if self.design_mode:
-            self.connected_controllers[light["base_topic"]] = None
+            self.connected_drivers[light["base_topic"]] = None
             self.assign_physical_light(row_index, column_index, None)
             return
         if light is None:
@@ -189,19 +189,20 @@ class ESPMegaLightGrid:
         base_topic = light["base_topic"]
         pwm_id = light["pwm_id"]
         if base_topic not in self.drivers:
-            self._create_new_driver(base_topic)
+            driver = self._create_new_driver(base_topic, pwm_id)
         else:
             controller = self.drivers[base_topic].controller
             driver = ESPMegaLightDriver(controller, pwm_id)
         self.assign_physical_light(row_index, column_index, driver)
 
-    def _create_new_driver(self, base_topic):
+    def _create_new_driver(self, base_topic: str, pwm_id: int):
         if not self.design_mode:
-            driver = ESPMegaStandaloneLightDriver(base_topic, self.light_server, self.light_server_port)
+            driver = ESPMegaStandaloneLightDriver(base_topic, pwm_id, self.light_server, self.light_server_port)
         if driver.is_connected():
             self.drivers[base_topic] = driver
         else:
             self.failed_drivers[base_topic] = driver.get_exception()
+        return driver
 
     def read_light_map_from_file(self, filename: str):
         try:
@@ -209,7 +210,7 @@ class ESPMegaLightGrid:
                 light_map = json.load(file)
             
             ESPMegaLightGrid._validate_light_map(light_map)
-            ESPMegaLightGrid.read_light_map(light_map)
+            self.read_light_map(light_map)
             
         except FileNotFoundError:
             raise FileNotFoundError("The light map file does not exist.")
