@@ -6,7 +6,7 @@ def readme():
 
 setup(
     name='espmega_lightshow',
-    version='4.3',
+    version='4.5',
     license='Apache 2.0',
     author="Siwat Sirichai",
     author_email='siwat@siwatinc.com',
@@ -22,8 +22,7 @@ setup(
     keywords='light mqtt espmega',
     install_requires=[
           'espmega',
-          'pillow',
-          'homeassistant-api'
+          'pillow'
       ],
 
 )

@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 import json
 from tkinter import filedialog
-from espmega_lightshow.drivers import UniversalLightGrid, LightDriver, ESPMegaLightDriver, HomeAssistantLightDriver
+from espmega_lightshow.drivers import UniversalLightGrid, LightDriver, ESPMegaLightDriver, HomeAssistantLightDriver, PackageManager, DriverDependencyNotMetError
 from dataclasses import dataclass
 import sys
 import json
@@ -294,10 +294,23 @@ def color_to_state(color: str):
     else:
         return LIGHT_DISABLED
 
+def load_light_grid():
+    global light_grid
+    try:
+        light_grid = LightGrid(design_mode=design_mode)
+        light_grid.read_light_map_from_file(filename=light_map_file)
+    except FileNotFoundError:
+        messagebox.showerror(
+            MSG_FILE_NOT_FOUND_TITLE, "The light map file could not be found.")
+    except json.decoder.JSONDecodeError:
+        messagebox.showerror(
+            MSG_LOAD_ERROR_TITLE, "The light map file is corrupted.")
+    except DriverDependencyNotMetError as e:
+        messagebox.showerror(MSG_LOAD_ERROR_TITLE, e)
+
 
 # Load light map from light_map.json
-light_grid = LightGrid(design_mode=design_mode)
-light_grid.read_light_map_from_file(filename=light_map_file)
+load_light_grid()
 rows = light_grid.rows
 columns = light_grid.columns
 
@@ -512,7 +525,7 @@ def render_frame(frame: list):
 
 def change_light_config(event):
     # Get a list of all configuration options for each light driver
-    config_options = {"disabled":[],"espmega": ESPMegaLightDriver.get_driver_properties()["configuration_parameters"], "homeassistant": HomeAssistantLightDriver.get_driver_properties()["configuration_parameters"]}
+    config_options = PackageManager.get_config_options()
     config_vars = {}
     config_frames = {}
     global script_active
@@ -559,8 +572,7 @@ def change_light_config(event):
             json.dump(light_grid.light_map, file)
 
         # Reload the light_grid
-        light_grid = LightGrid(design_mode=design_mode)
-        light_grid.read_light_map_from_file(filename=light_map_file)
+        load_light_grid()
 
         render_frame_at_index(slider.get())
         root.update()
@@ -690,8 +702,7 @@ def reconnect_light_controllers():
     global light_grid
     global design_mode
     old_light_map = light_grid.light_map
-    light_grid = LightGrid(design_mode=design_mode)
-    light_grid.read_light_map(old_light_map)
+    load_light_grid()
     render_frame_at_index(slider.get())
     root.update()
 

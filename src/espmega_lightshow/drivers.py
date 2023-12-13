@@ -2,11 +2,41 @@ from abc import ABC
 from espmega.espmega_r3 import ESPMega_standalone, ESPMega
 import json
 from typing import Optional
-from homeassistant_api import Client as HomeAssistantClient
-from homeassistant_api import errors as HomeAssistantErrors
+homeassistant_api_available = True
+try :
+    from homeassistant_api import Client as HomeAssistantClient
+    from homeassistant_api import errors as HomeAssistantErrors
+except ImportError:
+    homeassistant_api_available = False
+    HomeAssistantClient = any
+    HomeAssistantErrors = any
 from paho.mqtt.client import Client as MQTTClient
 from threading import Thread
 
+class DriverDependencyNotMetError(Exception):
+    pass
+
+class PackageManager:
+    @staticmethod
+    def get_available_drivers() -> dict:
+        # This function should return a dictionary of driver names to driver classes
+        # The driver classes should be subclasses of LightDriver
+        # The driver names should be strings
+        # The driver classes should be able to be initialized without any parameters
+        drivers = {}
+        driver['disabled'] = []
+        # Check if homeassistant_api is available
+        if homeassistant_api_available:
+            drivers["homeassistant"] = HomeAssistantLightDriver
+        drivers["espmega"] = ESPMegaLightDriver
+    @staticmethod
+    def get_config_options():
+        config_option = {}
+        config_option["disabled"] = []
+        if homeassistant_api_available:
+            config_option["homeassistant"] = HomeAssistantLightDriver.get_driver_properties()["configuration_parameters"]
+        config_option["espmega"] = ESPMegaLightDriver.get_driver_properties()["configuration_parameters"]
+        return config_option
 # This is the base class for all physical light drivers
 class LightDriver(ABC):
     LIGHT_STATE_OFF = 0
@@ -293,6 +323,9 @@ class HomeAssistantMultiServer:
         # Dictionary of a tuple of api url and api key to Home Assistant client
         self.ha_clients = {}
     def get_ha_client(self, api_url: str, api_key: str) -> HomeAssistantClient:
+        # If homeassistant_api is not available, raise an exception
+        if not homeassistant_api_available:
+            raise DriverDependencyNotMetError("The homeassistant_api package is not installed but is used in the loaded light map.\nPlease install the package by running 'pip install homeassistant_api'\nNote that this requires Visual Studio Build Tools 2015 to be installed.")
         # Check if there is a Home Assistant client for the api url and api key
         if (api_url, api_key) not in self.ha_clients:
             # If there is no Home Assistant client, create one
