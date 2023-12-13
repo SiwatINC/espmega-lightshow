@@ -6,18 +6,22 @@ example_universal_grid_map = [[{"driver": "espmega", "light_server": "192.168.0.
 grid = UniversalLightGrid()
 grid.read_light_map(example_universal_grid_map)
 
+print(grid.get_light_state(0, 0))
+grid.set_light_state(0, 0, True)
+print(grid.get_light_state(0, 0))
+
 # Cycle the light on and off in order to test the driver
 # Note that this is a 2x2 grid, we will go clockwise
-while True:
-    grid.set_light_state(0, 0, True)
-    grid.set_light_state(1, 0, False)
-    sleep(1)
-    grid.set_light_state(0, 0, False)
-    grid.set_light_state(0, 1, True)
-    sleep(1)
-    grid.set_light_state(0, 1, False)
-    grid.set_light_state(1, 1, True)
-    sleep(1)
-    grid.set_light_state(1, 1, False)
-    grid.set_light_state(1, 0, True)
-    sleep(1)
+# while True:
+#     grid.set_light_state(0, 0, True)
+#     grid.set_light_state(1, 0, False)
+#     sleep(1)
+#     grid.set_light_state(0, 0, False)
+#     grid.set_light_state(0, 1, True)
+#     sleep(1)
+#     grid.set_light_state(0, 1, False)
+#     grid.set_light_state(1, 1, True)
+#     sleep(1)
+#     grid.set_light_state(1, 1, False)
+#     grid.set_light_state(1, 0, True)
+#     sleep(1)

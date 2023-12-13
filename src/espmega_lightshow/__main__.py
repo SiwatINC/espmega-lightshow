@@ -326,7 +326,8 @@ def set_tile_state(row: int, column: int, state: bool):
     light = light_grid.get_physical_light(row, column)
     # Set the light state
     light.set_light_state(state)
-    light_state = light.state_to_multistate(state)
+    light_state = light_grid.get_light_state(row, column)
+    print(f"Setting tile color at {row}, {column} to {light_state}")
     # Set the tile color
     if light_state == LightDriver.LIGHT_STATE_OFF:
         element.config(bg=COLOR_OFF)
