@@ -135,7 +135,7 @@ class ESPMegaLightDriver(LightDriver):
 
     def __init__(self, controller: ESPMega, pwm_channel: int) -> int:
         self.controller = controller
-        self.pwm_channel = pwm_channel
+        self.pwm_channel = int(pwm_channel)
         if controller is None:
             self.connected = False
             self.exception = "Controller is not connected."
@@ -215,7 +215,9 @@ class ESPMegaMultiController:
             # If there is no connection, create one
             self.mqtt_connections[(light_server, light_server_port)] = MQTTClient()
             try:
-                self.mqtt_connections[(light_server, light_server_port)].connect(light_server, light_server_port)
+                print(f"Connecting to light server at {light_server}:{light_server_port}")
+                self.mqtt_connections[(light_server, light_server_port)].connect(light_server, int(light_server_port))
+                print(f"Starting thread for {light_server}:{light_server_port}")
                 self.mqtt_connections[(light_server, light_server_port)].loop_start()
                 print(f"Connected to {light_server}:{light_server_port}")
             except Exception as e:
@@ -505,6 +507,7 @@ class UniversalLightGrid(LightGrid):
         self._validate_light_map(light_map)
         # Then we will initialize the light map
         self.initialize_light_map(light_map)
+        print(light_map)
         for row_index, row in enumerate(light_map):
             for column_index, light in enumerate(row):
                 # light is a dictionary with fields varying by driver
@@ -519,7 +522,6 @@ class UniversalLightGrid(LightGrid):
                     continue
                 # Let's switch on the driver field
                 driver_type = light["driver"]
-                print(light)
                 # If the driver is espmega, we utilize the ESPMegaMultiController to manage the controllers
                 if driver_type == "espmega":
                     controller = self.espmega_driver_bank.get_controller(light["base_topic"], light["light_server"], light["light_server_port"])
@@ -543,7 +545,7 @@ class UniversalLightGrid(LightGrid):
         try:
             with open(filename, "r") as file:
                 light_map = json.load(file)
-            self.read_light_map(light_map)
+                self.read_light_map(light_map)
         except FileNotFoundError:
             raise FileNotFoundError("The light map file does not exist.")
     def initialize_light_map(self, light_map):
