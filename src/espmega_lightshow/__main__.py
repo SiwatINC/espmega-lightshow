@@ -21,6 +21,7 @@ import webbrowser
 import subprocess
 import re
 from PIL import Image, ImageTk
+import platform
 
 # Constants Definitions
 LIGHT_DISABLED = -1
@@ -1325,6 +1326,62 @@ def clear_script_slot(slot: int):
     script_quick_load_slots[slot-1] = None
     quick_run_menu.entryconfig(slot+6, label=f"Script Slot {slot}: Empty")
 
+def install_package(package: str):
+    # Show a command prompt window to install the package
+    subprocess.call([sys.executable, "-m", "pip", "install", package])
+
+def install_home_assistant_driver():
+    install_package("homeassistant_api")
+    # Check if the driver is installed
+    try:
+        import homeassistant_api
+    except ModuleNotFoundError:
+        messagebox.showerror("Driver Not Installed", "The Home Assistant driver could not be installed. Please try again.\nDo you have Visual Studio Build Tools installed?\nIf you are using a python version that does not have a prebuilt wheel, you will need to install Visual Studio Build Tools.")
+        return
+    messagebox.showinfo("Driver Installed", "The Home Assistant driver has been installed successfully. Please restart the program to use the driver.")
+
+def show_driver_menu():
+    driver_menu_root = tk.Toplevel(root)
+    driver_menu_root.title("Driver Manager")
+    icon = ImageTk.PhotoImage(icon_image)
+    driver_menu_root.wm_iconphoto(True, icon)
+    driver_menu_root.geometry("325x170")
+    driver_menu_root.resizable(False, False)
+
+    # Create a label for the python version
+    python_version_label = ttk.Label(driver_menu_root, text=f"Python Version: {platform.python_version()}")
+    python_version_label.pack(pady=5)
+    # Create a warning label for the python version if it is not 3.11.2
+    if platform.python_version() != "3.11.2":
+        python_version_warning_label = ttk.Label(driver_menu_root, text="WARNING: This program was tested with Python 3.11.2\nSome drivers may not install correctly\nif pre-built wheel does not exist for your platfrom.", foreground="red")
+        python_version_warning_label.pack(pady=1)
+    # Create espmega driver frame
+    espmega_frame = ttk.Frame(driver_menu_root)
+    # Create a label for the espmega driver
+    espmega_label = ttk.Label(espmega_frame, text="ESPMega Driver")
+    espmega_label.grid(row=0, column=0)
+    # Create a button that shows that the espmega driver is installed because it is built-in
+    espmega_install_button = ttk.Button(espmega_frame, text="Installed", state="disabled")
+    espmega_install_button.grid(row=0, column=1)
+    espmega_frame.pack(pady=10)
+    # Create home assistant driver frame
+    home_assistant_frame = ttk.Frame(driver_menu_root)
+    # Create a label for the home assistant driver
+    home_assistant_label = ttk.Label(home_assistant_frame, text="Home Assistant Driver")
+    home_assistant_label.grid(row=0, column=0)
+    # Create a button to install the home assistant driver if it is not installed
+    # Otherwise, create a button that says "Installed" and is disabled
+    home_assistant_install_button = ttk.Button(home_assistant_frame, text="Install", command=install_home_assistant_driver)
+    if "homeassistant_api" in sys.modules:
+        home_assistant_install_button.config(text="Installed", state="disabled")
+    home_assistant_install_button.grid(row=0, column=1)
+    home_assistant_frame.pack(pady=10)
+        
+
+
+    
+
+
 instant_playback_var = tk.BooleanVar()
 
 # Create the Quick Run menu
@@ -1425,7 +1482,9 @@ def check_for_updates():
 help_menu = tk.Menu(menu_bar, tearoff=False)
 help_menu.add_command(label="About", command=open_about_popup)
 help_menu.add_command(label="Documentation", command=lambda: webbrowser.open("https://github.com/SiwatINC/espmega-lightshow/wiki"))
+help_menu.add_separator()
 help_menu.add_command(label="Check for Updates", command=check_for_updates)
+help_menu.add_command(label="Driver Manager", command=show_driver_menu)
 menu_bar.add_cascade(label="Help", menu=help_menu)
 
 

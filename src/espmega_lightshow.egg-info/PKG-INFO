@@ -1,14 +1,12 @@
 Metadata-Version: 2.1
 Name: espmega-lightshow
-Version: 4.5
+Version: 4.8
 Home-page: https://github.com/SiwatINC/espmega-lightshow
 Author: Siwat Sirichai
 Author-email: siwat@siwatinc.com
 License: Apache 2.0
 Keywords: light mqtt espmega
 Description-Content-Type: text/markdown
-Requires-Dist: espmega
-Requires-Dist: pillow
 
 # ESPMega Light Show
 This is a program made for the ESPMega PLCs for easily programming light show and running light show script

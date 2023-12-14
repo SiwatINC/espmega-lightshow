@@ -6,7 +6,7 @@ def readme():
 
 setup(
     name='espmega_lightshow',
-    version='4.6',
+    version='4.8',
     license='Apache 2.0',
     author="Siwat Sirichai",
     author_email='siwat@siwatinc.com',
@@ -24,5 +24,7 @@ setup(
           'espmega',
           'pillow'
       ],
-
+    extra_require={
+        'homeassistant_driver': ['homeassistant_api']
+    }
 )
