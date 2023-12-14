@@ -3,6 +3,8 @@ from espmega.espmega_r3 import ESPMega_standalone, ESPMega
 import json
 from typing import Optional
 homeassistant_api_available = True
+import warnings
+
 try :
     from homeassistant_api import Client as HomeAssistantClient
     from homeassistant_api import errors as HomeAssistantErrors
@@ -13,9 +15,13 @@ except ImportError:
 from paho.mqtt.client import Client as MQTTClient
 from threading import Thread
 
+# This exception is raised when a driver dependency is not met
+# e.g. some packages are not installed
 class DriverDependencyNotMetError(Exception):
     pass
 
+# This class is used to manage the drivers
+# It is used to get the available drivers and their configuration options
 class PackageManager:
     @staticmethod
     def get_available_drivers() -> dict:
@@ -37,6 +43,7 @@ class PackageManager:
             config_option["homeassistant"] = HomeAssistantLightDriver.get_driver_properties()["configuration_parameters"]
         config_option["espmega"] = ESPMegaLightDriver.get_driver_properties()["configuration_parameters"]
         return config_option
+
 # This is the base class for all physical light drivers
 class LightDriver(ABC):
     LIGHT_STATE_OFF = 0
@@ -129,7 +136,10 @@ class LightDriver(ABC):
         # color is a tuple of 3 integers between 0 and 4095
         pass
 
-
+# This class is used to control a single light, it takes in an initialized ESPMega object and a pwm channel
+# This class does not manage the connection to the server or the controller
+# It is recommended that you use ESPMegaDriverFactory to manage the connections
+# When controlling multiple light, it is recommended that you use ESPMegaDriverFactory to manage the connections
 class ESPMegaLightDriver(LightDriver):
     rapid_mode: bool = False
 
@@ -162,9 +172,13 @@ class ESPMegaLightDriver(LightDriver):
             "configuration_parameters": ["light_server", "light_server_port","base_topic", "pwm_id"]
         }
 
-
+# This class is deprecated, please use ESPMegaDriverFactory or ESPMegaLightDriver instead
+# This class manages the connection to the server and the controller for a single light
+# When there are multiple light and ESPMegaStandaloneLightDriver is used, there will be multiple connections to the server
+# When controlling multiple light, it is recommended that you use ESPMegaDriverFactory to manage the connections
 class ESPMegaStandaloneLightDriver(ESPMegaLightDriver):
     def __init__(self, base_topic: str,pwm_channel: int, light_server: str, light_server_port: int, rapid_mode: bool = False) -> dict:
+        warnings.showwarning("This class is deprecated. Please use ESPMegaDriverFactory to manage the connections.", DeprecationWarning, "drivers.py", 150)
         self.base_topic = base_topic
         self.light_server = light_server
         self.light_server_port = light_server_port
@@ -199,7 +213,7 @@ class ESPMegaStandaloneLightDriver(ESPMegaLightDriver):
 # It also allows for multiple ESPMegaLightDriver and ESPMegaStandaloneLightDriver connected to different servers
 # It manages the connection to the servers and the controllers to ensure that there is only one connection to each server
 # It also manages the controllers to ensure that there is only one controller per base topic
-class ESPMegaMultiController:
+class ESPMegaDriverFactory:
     def __init__(self):
         # Dictionary of server ip to mqtt connection
         self.mqtt_connections = {}
@@ -251,7 +265,13 @@ class ESPMegaMultiController:
                 del self.mqtt_connections[(light_server, light_server_port)]
             # Delete the controller
             del self.controllers[(light_server, light_server_port, base_topic)]
+    def get_driver(self, base_topic: str, light_server: str, light_server_port: int, pwm_channel: int) -> ESPMegaLightDriver:
+        # Get the controller
+        controller = self.get_controller(base_topic, light_server, light_server_port)
+        # Bind the controller to the driver
+        return ESPMegaLightDriver(controller, pwm_channel)
 
+# This class is used to control a single virtual light that is not connected to any physical light
 class DummyLightDriver(LightDriver):
     def __init__(self, offline: bool = False):
         self.connected = True
@@ -272,6 +292,10 @@ class DummyLightDriver(LightDriver):
             "configuration_parameters": []
         }
 
+# This class is used to control a single light connected to a Home Assistant server
+# It takes in a HomeAssistantClient object and an entity id
+# It manages the connection to the server and the light
+# If multiple lights are connected to the same server, it is recommended that you use HomeAssistantDriverFactory to manage the connections
 class HomeAssistantLightDriver(LightDriver):
     def __init__(self, ha: HomeAssistantClient, entity_id: str):
         # Connect to Home Assistant
@@ -327,7 +351,9 @@ class HomeAssistantLightDriver(LightDriver):
             "configuration_parameters": ["api_url", "api_key", "entity_id"]
         }
 
-class HomeAssistantMultiServer:
+# This class is used to manage the connections to the Home Assistant servers
+# It manages the connections to the servers to ensure that there is only one connection to each server
+class HomeAssistantDriverFactory:
     def __init__(self):
         # Dictionary of a tuple of api url and api key to Home Assistant client
         self.ha_clients = {}
@@ -345,6 +371,11 @@ class HomeAssistantMultiServer:
                 return None
             # Return the Home Assistant client
         return self.ha_clients[(api_url, api_key)]
+    def get_ha_driver(self, api_url: str, api_key: str, entity_id: str) -> HomeAssistantLightDriver:
+        # Get ha_client
+        ha_client = self.get_ha_client(api_url, api_key)
+        # Bind the ha_client to the driver
+        return HomeAssistantLightDriver(ha_client, entity_id)
 
 class LightGrid(ABC):
     def __init__(self, rows: int = 0, columns: int = 0, design_mode: bool = False):
@@ -399,8 +430,13 @@ class LightGrid(ABC):
         # This function should validate the column
         pass
 
+# This class is used to manage a light grid that uses ESPMegaLightDriver and ESPMegaStandaloneLightDriver
+# In major version 4, UniversalLightGrid was introduced to replace this class
+# The UniversalLightGrid class is more flexible and allows for more drivers types
+# This class is deprecated, please use UniversalLightGrid instead
 class ESPMegaLightGrid(LightGrid):
     def __init__(self, light_server: str, light_server_port: int, rows: int = 0, columns: int = 0, rapid_mode: bool = False, design_mode: bool = False):
+        warnings.warn("ESPMegaLightGrid is deprecated. Please use UniversalLightGrid instead.", DeprecationWarning)
         self.rows = rows
         self.columns = columns
         self.lights: list = [None] * rows * columns
@@ -499,7 +535,8 @@ class ESPMegaLightGrid(LightGrid):
             if not isinstance(column["pwm_id"], int):
                 raise ValueError("The pwm_id field must be an integer.")
 
-# A universal light grid is a light grid that can use any driver
+# This class is used to manage a light grid that can use any driver
+# It is recommended that you use this class to manage the light grid
 class UniversalLightGrid(LightGrid):
     def __init__(self, rows: int = 0, columns: int = 0, design_mode: bool = False):
         self.rows = rows
@@ -507,8 +544,8 @@ class UniversalLightGrid(LightGrid):
         self.lights: list = [None] * rows * columns
         self.driver_types: list = [None] * rows * columns
         self.design_mode = design_mode
-        self.espmega_driver_bank = ESPMegaMultiController()
-        self.ha_server_bank = HomeAssistantMultiServer()
+        self.espmega_driver_bank = ESPMegaDriverFactory()
+        self.ha_server_bank = HomeAssistantDriverFactory()
     def read_light_map(self, light_map: list) -> list:
         # First we will validate the light map
         self._validate_light_map(light_map)
@@ -529,7 +566,7 @@ class UniversalLightGrid(LightGrid):
                     continue
                 # Let's switch on the driver field
                 driver_type = light["driver"]
-                # If the driver is espmega, we utilize the ESPMegaMultiController to manage the controllers
+                # If the driver is espmega, we utilize the ESPMegaDriverFactory to manage the controllers
                 if driver_type == "espmega":
                     controller = self.espmega_driver_bank.get_controller(light["base_topic"], light["light_server"], light["light_server_port"])
                     print(f"Controller: {controller}, {light['base_topic']}")
@@ -543,9 +580,8 @@ class UniversalLightGrid(LightGrid):
                         self.assign_physical_light(row_index, column_index, driver)
                 elif driver_type == "homeassistant":
                     # If the driver is homeassistant, we will create a new HomeAssistantLightDriver
-                    # We will utilize the HomeAssistantMultiServer to manage the connections to the servers
-                    ha_client = self.ha_server_bank.get_ha_client(light["api_url"], light["api_key"])
-                    driver = HomeAssistantLightDriver(ha_client, light["entity_id"])
+                    # We will utilize the HomeAssistantDriverFactory to manage the connections to the servers
+                    driver = self.ha_server_bank.get_ha_driver(light["api_url"], light["api_key"], light["entity_id"])
                     # We will then assign the driver to the light
                     self.assign_physical_light(row_index, column_index, driver)
     def read_light_map_from_file(self, filename: str):
