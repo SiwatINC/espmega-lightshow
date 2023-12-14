@@ -279,7 +279,14 @@ class HomeAssistantLightDriver(LightDriver):
         self.entity_id = entity_id
         self.command_waiting = False
         try:
+            # Get the light api object
             self.light_api = ha.get_domain("light")
+            # Check if the light is available
+            state = self.ha.get_state(entity_id=self.entity_id)
+            if state == 'unavailable':
+                self.connected = False
+                self.exception = 'Light is unavailable'
+                return
         except Exception as e:
             print(e)
             self.connected = False
