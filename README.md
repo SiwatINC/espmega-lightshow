@@ -26,6 +26,10 @@ This is a program made for the ESPMega PLCs for easily programming light show an
   ```bash
   bash <(curl -s https://raw.githubusercontent.com/SiwatINC/espmega-lightshow/main/installer_ubuntu.sh)
   ```
+- macOS
+  ```bash
+  bash <(curl -s https://raw.githubusercontent.com/SiwatINC/espmega-lightshow/main/installer_macos.sh)
+  ```
 
 ## Running
 - The program can be run from the CLI using the command:
